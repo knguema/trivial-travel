@@ -12,24 +12,24 @@
   --green:   #18c25a;
   --green-d: #12a84c;
   --white:   #ffffff;
-  --text:    #0a1a10;
-  --muted:   #4d7560;
-  --border:  #c6e8d4;
-  --bg:      #f4fbf7;
-  --surface: #ffffff;
+  --text:    #e8eaf6;
+  --muted:   #8892b0;
+  --border:  #1e2a4a;
+  --bg:      #070b18;
+  --surface: #0d1235;
 }
 
 html, body {
   min-height: 100%;
   font-family: 'Barlow', sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: #e8eaf6;
 }
 
 /* ── TOPBAR ── */
 .topbar {
   position: sticky; top: 0; z-index: 100;
-  background: var(--white);
+  background: #0d1235;
   border-bottom: 1px solid var(--border);
   padding: 0 32px;
   height: 56px;
@@ -78,7 +78,7 @@ html, body {
 
 /* ── SIDEBAR ── */
 .sidebar {
-  background: var(--white);
+  background: #0d1235;
   border-right: 1px solid var(--border);
   padding: 24px 16px;
 }
@@ -99,7 +99,7 @@ html, body {
   color: var(--muted); margin-bottom: 2px;
 }
 
-.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item:hover { background: var(--bg); color: #e8eaf6; }
 .nav-item.active { background: rgba(24,194,90,0.1); color: var(--green); font-weight: 600; }
 
 .nav-dot {
@@ -133,7 +133,7 @@ html, body {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800; font-size: 28px;
   text-transform: uppercase; letter-spacing: -0.5px;
-  color: var(--text); line-height: 1;
+  color: #e8eaf6; line-height: 1;
   margin-bottom: 4px;
 }
 
@@ -150,7 +150,7 @@ html, body {
 
 /* ── CARDS ── */
 .card {
-  background: var(--white);
+  background: #0d1235;
   border: 1px solid var(--border);
   border-radius: 4px; overflow: hidden;
   margin-bottom: 16px;
@@ -167,7 +167,7 @@ html, body {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700; font-size: 13px;
   letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text);
+  color: #e8eaf6;
 }
 
 .card-body { padding: 20px; }
@@ -215,19 +215,19 @@ html, body {
 .field label {
   display: block; font-size: 10px; font-weight: 700;
   letter-spacing: 1.2px; text-transform: uppercase;
-  color: var(--text); margin-bottom: 7px;
+  color: #e8eaf6; margin-bottom: 7px;
 }
 
 .field input, .field select, .field textarea {
   width: 100%; padding: 11px 13px;
   background: var(--bg); border: 1.5px solid var(--border);
   border-radius: 3px; font-family: 'Barlow', sans-serif;
-  font-size: 14px; color: var(--text); outline: none;
+  font-size: 14px; color: #e8eaf6; outline: none;
   transition: all .15s; resize: vertical;
 }
 
 .field input:focus, .field select:focus, .field textarea:focus {
-  border-color: var(--green); background: var(--white);
+  border-color: var(--green); background: #0d1235;
   box-shadow: 0 0 0 3px rgba(24,194,90,0.07);
 }
 
@@ -259,12 +259,12 @@ html, body {
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
 
 .stat-card {
-  background: var(--white); border: 1px solid var(--border);
+  background: #0d1235; border: 1px solid var(--border);
   border-radius: 4px; padding: 18px 20px;
 }
 .stat-num {
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800; font-size: 32px; color: var(--text);
+  font-weight: 800; font-size: 32px; color: #e8eaf6;
   line-height: 1; margin-bottom: 4px;
 }
 .stat-num span { color: var(--green); }
@@ -280,7 +280,7 @@ html, body {
 .modal-overlay.show { display: flex; }
 
 .modal {
-  background: var(--white); border-radius: 4px;
+  background: #0d1235; border-radius: 4px;
   width: 100%; max-width: 560px;
   max-height: 90vh; overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
@@ -325,18 +325,18 @@ html, body {
 
 .filter-bar input {
   flex: 1; min-width: 200px;
-  padding: 9px 13px; background: var(--white);
+  padding: 9px 13px; background: #0d1235;
   border: 1.5px solid var(--border); border-radius: 3px;
   font-family: 'Barlow', sans-serif; font-size: 14px;
-  color: var(--text); outline: none; transition: all .15s;
+  color: #e8eaf6; outline: none; transition: all .15s;
 }
 .filter-bar input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(24,194,90,0.07); }
 
 .filter-bar select {
-  padding: 9px 13px; background: var(--white);
+  padding: 9px 13px; background: #0d1235;
   border: 1.5px solid var(--border); border-radius: 3px;
   font-family: 'Barlow', sans-serif; font-size: 13px;
-  color: var(--text); outline: none; cursor: pointer;
+  color: #e8eaf6; outline: none; cursor: pointer;
   transition: all .15s;
 }
 .filter-bar select:focus { border-color: var(--green); }
