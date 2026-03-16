@@ -567,9 +567,7 @@ html, body {
 
     <div class="room-header">
       <span class="room-code-label">Código de sala</span>
-      <div class="room-code" id="room-code-display">
-        <span id="code-a">A</span><span id="code-b">B</span><span id="code-c">C</span><span style="color:var(--green)">·</span><span id="code-d">1</span><span id="code-e">2</span><span id="code-f">3</span>
-      </div>
+      <div class="room-code" id="room-code-display">——</div>
       <button class="copy-btn" onclick="copyCode()">
         <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar código
@@ -725,11 +723,8 @@ function leaveRoom() {
 
 // ── UI ────────────────────────────────────────────────────────────────────────
 function showRoom(code) {
-  // Display code with middle dot separator
-  const c = code.padEnd(6, '·');
-  document.getElementById('room-code-display').textContent = '';
   const display = document.getElementById('room-code-display');
-  display.innerHTML = `${c.slice(0,3)}<span style="color:var(--green);margin:0 2px">·</span>${c.slice(3)}`;
+  display.innerHTML = code;
 
   document.getElementById('host-controls').classList.toggle('visible', isHost);
   document.getElementById('waiting-host').classList.toggle('visible', !isHost);
