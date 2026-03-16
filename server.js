@@ -408,50 +408,37 @@ io.on('connection', (socket) => {
     broadcastRoom(code);
   });
 
-  // Answer question — ALL players can answer and score
+  // Answer question — only current player answers
   socket.on('game:answer', ({ answer }) => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room || room.state !== 'question') return;
 
-    // Find answering player
-    const player = room.players.find(p => p.id === socket.id);
-    if (!player) return;
-
-    // Prevent double answering
-    if (!room.answers) room.answers = {};
-    if (room.answers[socket.id]) return;
-    room.answers[socket.id] = answer;
+    const currentPlayer = room.players[room.currentPlayerIdx];
+    if (currentPlayer.id !== socket.id) return; // only current player
 
     const correct = answer === room.currentQuestion.a;
     if (correct) {
       const diffPts = { easy: 1, medium: 2, hard: 3 };
       const points = diffPts[room.currentDifficulty] || 2;
       room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
-      player.score = room.scores[socket.id];
+      currentPlayer.score = room.scores[socket.id];
     }
 
-    // Track answers for broadcast
-    if (!room.allAnswers) room.allAnswers = [];
-    room.allAnswers.push({ playerId: socket.id, playerName: player.name, answer, correct });
+    room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer, correct };
+    room.allAnswers = [{ playerId: socket.id, playerName: currentPlayer.name, answer, correct }];
+    room.state = 'answer';
+    room.answers = {};
 
-    // Check if ALL players have answered
-    const totalPlayers = room.players.length;
-    const totalAnswered = Object.keys(room.answers).length;
-
-    // Always broadcast current state so everyone sees who answered
-    room.lastAnswer = { playerId: socket.id, playerName: player.name, answer, correct };
-
-    if (totalAnswered >= totalPlayers) {
-      // All answered — go to scoreboard
-      room.state = 'answer';
-      room.answers = {};
-      room.allAnswers = [];
-      broadcastRoom(code);
-    } else {
-      // Still waiting for others — broadcast updated scores
-      broadcastRoom(code);
+    // Track wins
+    if (room.questionIdx >= 9) {
+      const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
+      if (winner) {
+        room.winner = winner.name;
+      }
     }
+
+    broadcastRoom(code);
   });
 
   // Next turn — any player can trigger
@@ -459,12 +446,22 @@ io.on('connection', (socket) => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
-    if (room.state !== 'answer') return; // prevent double trigger
+    if (room.state !== 'answer') return;
 
     room.questionIdx = (room.questionIdx || 0) + 1;
 
     if (room.questionIdx >= 10) {
       room.state = 'finished';
+      // Track win for winner
+      const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
+      if (winner) {
+        // Find user by name and increment wins
+        const userEntry = Object.entries(users).find(([, u]) => u.name === winner.name);
+        if (userEntry) {
+          users[userEntry[0]].wins = (users[userEntry[0]].wins || 0) + 1;
+          saveUsers(users);
+        }
+      }
       broadcastRoom(code);
       return;
     }
@@ -569,6 +566,12 @@ app.get('/api/users', (req, res) => {
     .filter(([k]) => k !== 'admin')
     .map(([email, u]) => ({ email, name: u.name, role: u.role }));
   res.json(list);
+});
+
+app.get('/api/wins/:name', (req, res) => {
+  const userEntry = Object.entries(users).find(([, u]) => u.name === req.params.name);
+  const wins = userEntry ? (userEntry[1].wins || 0) : 0;
+  res.json({ wins });
 });
 
 app.get('/api/tenant/:id', (req, res) => {
