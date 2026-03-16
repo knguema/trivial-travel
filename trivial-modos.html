@@ -283,6 +283,12 @@ html, body {
     <span class="brand">Trivial</span>
     <h1>Elige el modo<br>de juego</h1>
     <p>¿Contra quién quieres competir hoy?</p>
+    <div id="player-info" style="display:none;margin-top:10px;display:flex;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap">
+      <span id="player-name-display" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;color:rgba(255,255,255,0.7)"></span>
+      <div id="wins-badge-modos" style="display:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--green);background:rgba(45,125,210,0.1);padding:5px 16px;border-radius:20px;border:1px solid rgba(45,125,210,0.2)">
+        🏆 <span id="wins-count-modos">0</span> victorias
+      </div>
+    </div>
   </div>
 
   <div class="cards">
@@ -377,6 +383,22 @@ function selectMode(mode) {
 // Show admin button only for admin role
 if (sessionStorage.getItem('player_role') === 'admin') {
   document.getElementById('admin-card').style.display = 'flex';
+}
+
+// Show player name and wins
+const SERVER = window.location.origin;
+const playerName = sessionStorage.getItem('player_name');
+if (playerName && playerName !== 'Invitado') {
+  document.getElementById('player-info').style.display = 'flex';
+  document.getElementById('player-name-display').textContent = '👤 ' + playerName;
+  fetch(`${SERVER}/api/wins/${encodeURIComponent(playerName)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.wins > 0) {
+        document.getElementById('wins-count-modos').textContent = data.wins;
+        document.getElementById('wins-badge-modos').style.display = 'inline-block';
+      }
+    }).catch(() => {});
 }
 </script>
 
