@@ -646,6 +646,9 @@ async function loadWins() {
 }
 
 window.addEventListener('DOMContentLoaded', loadWins);
+
+// ── SOCKET ────────────────────────────────────────────────────────────────────
+function initSocket(callback) {
   if (socket && socket.connected) {
     callback();
     return;
