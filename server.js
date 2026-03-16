@@ -388,6 +388,7 @@ io.on('connection', (socket) => {
     const currentPlayer = room.players[room.currentPlayerIdx];
     if (currentPlayer.id !== socket.id) return;
 
+    console.log('🎡 spinResult:', categoryId, difficulty);
     const diff = difficulty || 'medium';
     const diffMap = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
     const diffLabel = diffMap[diff] || 'medio';
