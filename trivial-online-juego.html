@@ -1475,6 +1475,9 @@ function showScoreboard(room) {
   clearInterval(sbCountdownInterval);
   Audio.scoreboard();
 
+  console.log('📊 Scoreboard room.players:', JSON.stringify(room.players));
+  console.log('📊 room.state:', room.state, 'questionIdx:', room.questionIdx);
+
   const la      = room.lastAnswer;
   const q       = room.currentQuestion;
   const cp      = room.players[room.currentPlayerIdx];
@@ -1500,8 +1503,11 @@ function showScoreboard(room) {
   document.getElementById('sb-banner-pts').textContent  = isCorrect ? `+${pts}` : '';
   document.getElementById('sb-banner-pts').style.display = isCorrect ? 'block' : 'none';
 
-  // Sorted players
-  const sorted = [...room.players].sort((a, b) => b.score - a.score);
+  // Sorted players — use roomState as fallback
+  const playerList = (room.players && room.players.length > 0)
+    ? room.players
+    : (roomState && roomState.players ? roomState.players : []);
+  const sorted = [...playerList].sort((a, b) => b.score - a.score);
   const maxScore = sorted[0] ? sorted[0].score : 1;
 
   document.getElementById('sb-list').innerHTML = sorted.map((p, i) => {
@@ -1529,12 +1535,11 @@ function showScoreboard(room) {
     `;
   }).join('');
 
-  // Next button — host or current player
-  const isCurrentPlayer = myPlayer && cp && cp.id === myPlayer.id;
-  const canProceed = IS_HOST || isCurrentPlayer;
+  // Next button — EVERYONE can proceed (first one to click advances)
+  const canProceed = true;
   document.getElementById('sb-btn-next').classList.toggle('visible', canProceed);
 
-  // Countdown
+  // Countdown — everyone triggers next turn
   let t = 5;
   const fill   = document.getElementById('sb-fill');
   const cdText = document.getElementById('sb-countdown-text');
@@ -1549,7 +1554,7 @@ function showScoreboard(room) {
     if (t <= 3 && t > 0) Audio.countdownTick();
     if (t <= 0) {
       clearInterval(sbCountdownInterval);
-      if (canProceed) proceedNextTurn();
+      proceedNextTurn();
     }
   }, 1000);
 }
