@@ -395,13 +395,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Next turn
+  // Next turn — any player can trigger
   socket.on('game:nextTurn', () => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
-    const currentPlayer = room.players[room.currentPlayerIdx];
-    if (currentPlayer.id !== socket.id && room.host !== socket.id) return;
+    if (room.state !== 'answer') return; // prevent double trigger
 
     room.questionIdx = (room.questionIdx || 0) + 1;
 
