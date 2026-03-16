@@ -9,8 +9,8 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :root {
-  --green:   #18c25a;
-  --green-d: #12a84c;
+  --green:   #2d7dd2;
+  --green-d: #1a6ab8;
   --white:   #ffffff;
   --text:    #0a1a10;
   --muted:   #4d7560;
@@ -20,7 +20,7 @@
 html, body {
   height: 100%;
   font-family: 'Barlow', sans-serif;
-  background: #0a1a10;
+  background: #0a0e1a;
   color: #fff;
   overflow: hidden;
 }
@@ -34,7 +34,7 @@ html, body {
 /* ══════════════════════════════════════
    WAITING SCREEN
 ══════════════════════════════════════ */
-#screen-waiting { background: #0a1a10; }
+#screen-waiting { background: #0a0e1a; }
 
 .wait-inner { text-align:center; max-width:400px; }
 
@@ -90,7 +90,7 @@ html, body {
    SPIN SCREEN (ruleta)
 ══════════════════════════════════════ */
 #screen-spin {
-  background: #0d1f14;
+  background: #0d1130;
   gap: 0;
   justify-content: space-between;
   padding: 20px 24px 28px;
@@ -141,7 +141,7 @@ html, body {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%);
   width: 48px; height: 48px;
-  background: #0d1f14; border-radius: 50%;
+  background: #0d1130; border-radius: 50%;
   border: 3px solid var(--green);
   z-index: 10;
   display: flex; align-items: center; justify-content: center;
@@ -1378,11 +1378,11 @@ function lightenColor(hex) {
 // ── QUESTION ──────────────────────────────────────────────────────────────────
 function showQuestion(room) {
   showScreen('question');
-  const q   = room.currentQuestion;
-  const cat = categories.find(c => c.id === room.currentCategory);
-  const cp  = room.players[room.currentPlayerIdx];
+  const q      = room.currentQuestion;
+  const cat    = categories.find(c => c.id === room.currentCategory);
+  const cp     = room.players[room.currentPlayerIdx];
+  const myTurn = myPlayer && cp && cp.id === myPlayer.id;
 
-  // Set category background
   setCategoryBg(room.currentCategory);
 
   document.getElementById('q-counter').textContent = `P ${(room.questionIdx||0)+1}/10`;
@@ -1396,7 +1396,7 @@ function showQuestion(room) {
   const myAnswer = room.allAnswers && room.allAnswers.find(a => a.playerName === MY_NAME);
   const iHaveAnswered = !!myAnswer;
 
-  // Options — ALL players can answer
+  // Options — ONLY current player can answer
   const grid = document.getElementById('q-options');
   grid.innerHTML = '';
   if (q) {
@@ -1406,10 +1406,12 @@ function showQuestion(room) {
       btn.className = 'opt-btn';
       btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span>${opt}`;
 
-      if (iHaveAnswered) {
+      if (!myTurn || iHaveAnswered) {
         btn.disabled = true;
-        if (opt === q.a) btn.classList.add('correct');
-        else if (myAnswer && opt === myAnswer.answer && myAnswer.answer !== q.a) btn.classList.add('wrong');
+        if (iHaveAnswered) {
+          if (opt === q.a) btn.classList.add('correct');
+          else if (myAnswer && opt === myAnswer.answer && myAnswer.answer !== q.a) btn.classList.add('wrong');
+        }
       } else {
         btn.onclick = () => submitAnswer(opt, q.a);
       }
@@ -1419,21 +1421,24 @@ function showQuestion(room) {
 
   document.getElementById('q-feedback').className = 'q-feedback';
 
-  // Show who has answered
-  const answered = room.allAnswers ? room.allAnswers.length : 0;
-  const total    = room.players.length;
-  const waitText = iHaveAnswered
-    ? `Esperando a los demás... (${answered}/${total})`
-    : `Es el turno de ${cp ? cp.name : '—'} — ¡Tú también puedes responder!`;
+  // Status text
+  const waitEl = document.getElementById('q-waiting');
+  const waitTxt = document.getElementById('q-waiting-text');
+  waitEl.className = 'q-waiting show';
+  if (myTurn && !iHaveAnswered) {
+    waitTxt.textContent = '¡Es tu turno! Responde...';
+    waitEl.className = 'q-waiting'; // hide waiting dots when it's my turn
+  } else if (!myTurn) {
+    waitTxt.textContent = `Turno de ${cp ? cp.name : '—'} — espera tu turno`;
+  } else {
+    waitTxt.textContent = 'Respuesta enviada, esperando...';
+  }
 
-  document.getElementById('q-waiting').className = iHaveAnswered ? 'q-waiting show' : 'q-waiting show';
-  document.getElementById('q-waiting-text').textContent = waitText;
-
-  // Timer — everyone gets the timer
+  // Timer — only for current player
   clearInterval(timerInterval);
   let t = TIME_LIMIT;
   updateTimer(t);
-  if (!iHaveAnswered) {
+  if (myTurn && !iHaveAnswered) {
     timerInterval = setInterval(() => {
       t--;
       updateTimer(t);
