@@ -9,20 +9,20 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :root {
-  --green:    #1a7a4a;
-  --green-l:  #1f9057;
-  --green-bg: #f0f5f2;
+  --green:    #2d7dd2;
+  --green-l:  #3a8fe0;
+  --green-bg: #0a0e1a;
   --white:    #ffffff;
-  --text:     #0c1f14;
-  --muted:    #5a7a68;
-  --border:   #ccddd5;
+  --text:     #e8eaf6;
+  --muted:    #8892b0;
+  --border:   #1e2a4a;
 }
 
 html, body {
   height: 100%;
   font-family: 'Barlow', sans-serif;
-  background: var(--green-bg);
-  color: var(--text);
+  background: #0a0e1a;
+  color: #e8eaf6;
 }
 
 .page {
@@ -37,7 +37,7 @@ html, body {
 .card {
   width: 100%;
   max-width: 420px;
-  background: var(--white);
+  background: #0d1530;
   border-radius: 4px;
   border: 1px solid var(--border);
   box-shadow: 0 8px 40px rgba(26,122,74,0.08);
@@ -70,7 +70,7 @@ html, body {
   font-weight: 800;
   font-size: 32px;
   letter-spacing: -0.5px;
-  color: var(--text);
+  color: #e8eaf6;
   line-height: 1;
   margin-bottom: 6px;
   text-transform: uppercase;
@@ -116,7 +116,7 @@ html, body {
 }
 
 .tab.active {
-  color: var(--text);
+  color: #e8eaf6;
 }
 
 .tab.active::after {
@@ -152,7 +152,7 @@ html, body {
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--text);
+  color: #e8eaf6;
   letter-spacing: 1.2px;
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -161,20 +161,20 @@ html, body {
 .field input {
   width: 100%;
   padding: 12px 14px;
-  background: var(--green-bg);
+  background: #0a0e1a;
   border: 1.5px solid var(--border);
   border-radius: 3px;
   font-family: 'Barlow', sans-serif;
   font-size: 15px;
   font-weight: 400;
-  color: var(--text);
+  color: #e8eaf6;
   outline: none;
   transition: border-color .15s, background .15s, box-shadow .15s;
 }
 
 .field input:focus {
   border-color: var(--green);
-  background: var(--white);
+  background: #0d1530;
   box-shadow: 0 0 0 3px rgba(26,122,74,0.08);
 }
 
@@ -215,7 +215,7 @@ html, body {
   width: 15px; height: 15px;
   border: 1.5px solid var(--border);
   border-radius: 2px;
-  background: var(--green-bg);
+  background: #0a0e1a;
   cursor: pointer;
   position: relative;
   transition: all .15s;
