@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivial — Lobby</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --green:   #18c25a;
+  --green-d: #12a84c;
+  --white:   #ffffff;
+  --text:    #0a1a10;
+  --muted:   #4d7560;
+  --border:  #c6e8d4;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Barlow', sans-serif;
+  background: #ffffff;
+  color: var(--text);
+}
+
+/* ── BACK ── */
+.btn-back {
+  position: fixed;
+  top: 28px; left: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 18px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .15s;
+  z-index: 10;
+}
+.btn-back:hover { border-color: var(--green); color: var(--green); }
+.btn-back svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── PAGE ── */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; width: 100%; max-width: 500px; }
+.screen.active { display: block; animation: rise .35s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes rise {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(28px, 5vw, 38px);
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(24,194,90,0.07);
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1.5px; left: 0; right: 0;
+  height: 2px;
+  background: var(--green);
+  transform: scaleX(0);
+  transition: transform .2s;
+}
+
+.tab.active { color: var(--text); }
+.tab.active::after { transform: scaleX(1); }
+
+/* ── FORM BODY ── */
+.card-body { padding: 28px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── FIELD ── */
+.field { margin-bottom: 18px; }
+
+.field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #f4fbf7;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: all .15s;
+}
+
+.field input:focus {
+  border-color: var(--green);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(24,194,90,0.08);
+}
+
+.field input::placeholder { color: #aecfbc; }
+
+.field input.code-input {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ── MSG ── */
+.msg {
+  display: none;
+  padding: 11px 14px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 18px;
+  border-left: 3px solid;
+}
+.msg.error   { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
+.msg.success { background: #f0fdf4; color: #14532d; border-color: var(--green); }
+.msg.show    { display: block; }
+
+/* ── BUTTON ── */
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-d); }
+.btn-primary:active { transform: scale(0.99); }
+
+/* ── SPINNER ── */
+.spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.btn.loading .btn-label { display: none; }
+.btn.loading .spinner   { display: block; }
+
+/* ════════════════════════════════════════
+   WAITING ROOM SCREEN
+════════════════════════════════════════ */
+.room-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.room-code-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.room-code {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 52px;
+  letter-spacing: 10px;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.room-code span { color: var(--green); }
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f4fbf7;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.copy-btn:hover { border-color: var(--green); color: var(--green); }
+.copy-btn svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── PLAYERS LIST ── */
+.players-section {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.players-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: #f4fbf7;
+}
+
+.players-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.players-count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--green);
+}
+
+.players-list {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 80px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 3px;
+  background: #f9fefb;
+  border: 1px solid var(--border);
+  animation: rise .25s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.player-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.player-you {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green);
+  background: rgba(24,194,90,0.1);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+.player-host {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.waiting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  animation: bounce .9s infinite;
+  margin: 0 2px;
+}
+.dots span:nth-child(2) { animation-delay: .15s; }
+.dots span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes bounce {
+  0%,100% { transform: translateY(0); background: var(--border); }
+  50%      { transform: translateY(-4px); background: var(--green); }
+}
+
+/* ── STATUS ── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f4fbf7;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 1.5s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+
+.status-text {
+  flex: 1;
+  margin-left: 8px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.status-connected { color: var(--green); font-weight: 600; font-size: 11px; letter-spacing: 0.5px; }
+
+/* ── HOST CONTROLS ── */
+.host-controls { display: none; }
+.host-controls.visible { display: block; }
+
+.min-players-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.btn-start {
+  width: 100%;
+  padding: 16px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn-start.ready { opacity: 1; pointer-events: all; }
+.btn-start.ready:hover { background: var(--green-d); }
+.btn-start:active { transform: scale(0.99); }
+
+/* ── WAITING (non-host) ── */
+.waiting-host {
+  display: none;
+  text-align: center;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.waiting-host.visible { display: block; }
+
+/* ── LEAVE ── */
+.btn-leave {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  background: transparent;
+  color: #c0392b;
+  border: 1.5px solid #fbb;
+  border-radius: 3px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-leave:hover { background: #fff5f5; }
+</style>
+</head>
+<body>
+
+<a class="btn-back" href="trivial-modos.html">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  Volver
+</a>
+
+<div class="page">
+
+  <!-- ══════════ SCREEN: JOIN / CREATE ══════════ -->
+  <div class="screen active" id="screen-join">
+
+    <div class="header">
+      <span class="brand">Trivial — Online</span>
+      <h1>Sala de juego</h1>
+      <p>Crea una sala o únete con el código de un amigo</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" id="tab-create" onclick="switchTab('create')">Crear sala</button>
+        <button class="tab"        id="tab-join"   onclick="switchTab('join')">Unirse</button>
+      </div>
+
+      <div class="card-body">
+        <div class="msg" id="msg"></div>
+
+        <!-- CREATE -->
+        <div class="tab-panel active" id="panel-create">
+          <div class="field">
+            <label>Tu nombre</label>
+            <input type="text" id="create-name" placeholder="¿Cómo te llaman?" maxlength="20">
+          </div>
+          <button class="btn btn-primary" id="btn-create" onclick="createRoom()">
+            <span class="btn-label">Crear sala</span>
+            <div class="spinner"></div>
+          </button>
+        </div>
+
+        <!-- JOIN -->
+        <div class="tab-panel" id="panel-join">
+          <div class="field">
+            <label>Tu nombre</label>
+            <input type="text" id="join-name" placeholder="¿Cómo te llaman?" maxlength="20">
+          </div>
+          <div class="field">
+            <label>Código de sala</label>
+            <input type="text" id="join-code" class="code-input" placeholder="XXXXXX" maxlength="6">
+          </div>
+          <button class="btn btn-primary" id="btn-join" onclick="joinRoom()">
+            <span class="btn-label">Unirse a la sala</span>
+            <div class="spinner"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════ SCREEN: WAITING ROOM ══════════ -->
+  <div class="screen" id="screen-room">
+
+    <div class="room-header">
+      <span class="room-code-label">Código de sala</span>
+      <div class="room-code" id="room-code-display">
+        <span id="code-a">A</span><span id="code-b">B</span><span id="code-c">C</span><span style="color:var(--green)">·</span><span id="code-d">1</span><span id="code-e">2</span><span id="code-f">3</span>
+      </div>
+      <button class="copy-btn" onclick="copyCode()">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar código
+      </button>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span class="status-text" id="status-text">Conectado al servidor</span>
+      <span class="status-connected" id="status-conn">EN LÍNEA</span>
+    </div>
+
+    <div class="players-section">
+      <div class="players-header">
+        <span class="players-title">Jugadores en la sala</span>
+        <span class="players-count" id="players-count">1 / 6</span>
+      </div>
+      <div class="players-list" id="players-list">
+        <div class="waiting-row">
+          <div class="dots"><span></span><span></span><span></span></div>
+          Esperando jugadores...
+        </div>
+      </div>
+    </div>
+
+    <!-- Host controls -->
+    <div class="host-controls" id="host-controls">
+      <div class="min-players-note" id="min-note">Necesitas al menos 2 jugadores para empezar</div>
+      <button class="btn-start" id="btn-start" onclick="startGame()">
+        Empezar partida
+      </button>
+    </div>
+
+    <!-- Guest waiting -->
+    <div class="waiting-host" id="waiting-host">
+      <div class="dots" style="margin-bottom:8px"><span></span><span></span><span></span></div>
+      Esperando a que el anfitrión empiece la partida...
+    </div>
+
+    <button class="btn-leave" onclick="leaveRoom()">Abandonar sala</button>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SERVER = window.location.origin;
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let socket = null;
+let myPlayer = null;
+let roomCode = null;
+let isHost = false;
+let players = [];
+
+const COLORS = ['#18c25a','#3B9EFF','#f5a623','#e84545','#a259ff','#ff6b6b'];
+
+// ── SOCKET ────────────────────────────────────────────────────────────────────
+function initSocket(callback) {
+  if (socket && socket.connected) {
+    callback();
+    return;
+  }
+
+  socket = io(SERVER, {
+    transports: ['polling'],
+    reconnection: true,
+    timeout: 8000,
+  });
+
+  socket.on('connect', () => {
+    setStatus('Conectado al servidor', true);
+    callback();
+  });
+
+  socket.on('disconnect', () => {
+    setStatus('Reconectando...', false);
+  });
+
+  socket.on('connect_error', (err) => {
+    setStatus('Sin conexión al servidor', false);
+    setLoading('btn-create', false);
+    setLoading('btn-join', false);
+    showMsg('No se puede conectar al servidor. Comprueba que está en marcha.', 'error');
+  });
+
+  socket.on('error', ({ msg }) => showMsg(msg, 'error'));
+
+  socket.on('room:created', ({ code, player }) => {
+    myPlayer = player;
+    roomCode = code;
+    isHost = true;
+    setLoading('btn-create', false);
+    showRoom(code);
+  });
+
+  socket.on('room:joined', ({ code, player }) => {
+    myPlayer = player;
+    roomCode = code;
+    isHost = false;
+    setLoading('btn-join', false);
+    showRoom(code);
+  });
+
+  socket.on('room:update', (room) => {
+    players = room.players;
+    renderPlayers(room);
+    updateStartBtn(room);
+  });
+
+  socket.on('game:start', ({ roomCode: rc }) => {
+    const code = rc || roomCode;
+    window.location.href = `trivial-online-juego.html?room=${code}&player=${encodeURIComponent(myPlayer.name)}&host=${isHost}`;
+  });
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function createRoom() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) return showMsg('Introduce tu nombre');
+  hideMsg();
+  setLoading('btn-create', true);
+  initSocket(() => {
+    socket.emit('room:create', { playerName: name, tenantId: 'default' });
+  });
+}
+
+function joinRoom() {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name) return showMsg('Introduce tu nombre');
+  if (!code || code.length < 4) return showMsg('Introduce el código de sala');
+  hideMsg();
+  setLoading('btn-join', true);
+  initSocket(() => {
+    socket.emit('room:join', { code, playerName: name, tenantId: 'default' });
+  });
+}
+
+function startGame() {
+  if (!socket) return;
+  socket.emit('game:start');
+}
+
+function leaveRoom() {
+  if (socket) socket.disconnect();
+  socket = null;
+  showScreen('join');
+  myPlayer = null; roomCode = null; isHost = false; players = [];
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+function showRoom(code) {
+  // Display code with middle dot separator
+  const c = code.padEnd(6, '·');
+  document.getElementById('room-code-display').textContent = '';
+  const display = document.getElementById('room-code-display');
+  display.innerHTML = `${c.slice(0,3)}<span style="color:var(--green);margin:0 2px">·</span>${c.slice(3)}`;
+
+  document.getElementById('host-controls').classList.toggle('visible', isHost);
+  document.getElementById('waiting-host').classList.toggle('visible', !isHost);
+  showScreen('room');
+}
+
+function renderPlayers(room) {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  document.getElementById('players-count').textContent = `${room.players.length} / 6`;
+
+  room.players.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    const isMe = myPlayer && p.id === myPlayer.id;
+    const isRoomHost = p.id === room.host;
+    row.innerHTML = `
+      <div class="player-dot" style="background:${p.color}"></div>
+      <span class="player-name">${p.name}</span>
+      ${isMe ? '<span class="player-you">Tú</span>' : ''}
+      ${isRoomHost ? '<span class="player-host">Anfitrión</span>' : ''}
+    `;
+    list.appendChild(row);
+  });
+
+  if (room.players.length < 6) {
+    const waiting = document.createElement('div');
+    waiting.className = 'waiting-row';
+    waiting.innerHTML = `<div class="dots"><span></span><span></span><span></span></div> Esperando jugadores...`;
+    list.appendChild(waiting);
+  }
+}
+
+function updateStartBtn(room) {
+  const btn = document.getElementById('btn-start');
+  const note = document.getElementById('min-note');
+  const canStart = room.players.length >= 1;
+  btn.classList.toggle('ready', canStart);
+  note.style.display = 'none';
+}
+
+function setStatus(text, online) {
+  document.getElementById('status-text').textContent = text;
+  const conn = document.getElementById('status-conn');
+  conn.textContent = online ? 'EN LÍNEA' : 'DESCONECTADO';
+  conn.style.color = online ? 'var(--green)' : '#e84545';
+  const dot = document.querySelector('.status-dot');
+  if (dot) dot.style.background = online ? 'var(--green)' : '#e84545';
+}
+
+function copyCode() {
+  const code = roomCode || '';
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Copiado';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-create').classList.toggle('active', tab === 'create');
+  document.getElementById('tab-join').classList.toggle('active', tab === 'join');
+  document.getElementById('panel-create').classList.toggle('active', tab === 'create');
+  document.getElementById('panel-join').classList.toggle('active', tab === 'join');
+  hideMsg();
+}
+
+function showMsg(text, type = 'error') {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = `msg ${type} show`;
+}
+
+function hideMsg() {
+  document.getElementById('msg').className = 'msg';
+}
+
+function setLoading(id, on) {
+  document.getElementById(id).classList.toggle('loading', on);
+}
+
+// ── CODE INPUT auto uppercase ─────────────────────────────────────────────────
+document.getElementById('join-code').addEventListener('input', function() {
+  this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+});
+</script>
+
+</body>
+</html>

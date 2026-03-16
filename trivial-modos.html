@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivial — Modo de juego</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --green:    #18c25a;
+  --green-d:  #12a84c;
+  --green-bg: #edfaf3;
+  --green-t:  rgba(24,194,90,0.08);
+  --white:    #ffffff;
+  --text:     #0a1a10;
+  --muted:    #4d7560;
+  --border:   #c6e8d4;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Barlow', sans-serif;
+  background: #ffffff;
+  color: var(--text);
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: #ffffff;
+}
+
+/* ── BACK ── */
+.btn-back {
+  position: fixed;
+  top: 28px;
+  left: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 18px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+  z-index: 10;
+}
+
+.btn-back:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn-back svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  margin-bottom: 52px;
+  animation: rise .38s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 14px;
+  display: block;
+}
+
+.header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(32px, 5vw, 44px);
+  letter-spacing: -0.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.header p {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ── CARDS ── */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 680px;
+  animation: rise .42s .08s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.mode-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 40px 36px 52px;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  box-shadow: 0 2px 12px rgba(24,194,90,0.04);
+}
+
+.mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--green);
+  transform: scaleX(0);
+  transition: transform .22s;
+  transform-origin: left;
+}
+
+.mode-card:hover {
+  border-color: var(--green);
+  box-shadow: 0 12px 40px rgba(24,194,90,0.12);
+  transform: translateY(-3px);
+}
+
+.mode-card:hover::before {
+  transform: scaleX(1);
+}
+
+.mode-card:active {
+  transform: translateY(-1px);
+}
+
+/* ── ICON BOX ── */
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  transition: border-color .18s, background .18s;
+}
+
+.mode-card:hover .icon-box {
+  border-color: var(--green);
+  background: var(--green-t);
+}
+
+.icon-box svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--green);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── TEXT ── */
+.mode-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.mode-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+/* ── TAGS ── */
+.mode-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: var(--green-bg);
+  color: var(--green-d);
+  border: 1px solid var(--border);
+}
+
+/* ── ARROW ── */
+.mode-arrow {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all .2s;
+}
+
+.mode-arrow svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--green);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mode-card:hover .mode-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes rise {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 560px) {
+  .cards { grid-template-columns: 1fr; max-width: 400px; }
+  .btn-back { top: 16px; left: 16px; }
+  .header { margin-bottom: 36px; }
+  .mode-card { padding: 28px 24px 48px; }
+}
+</style>
+</head>
+<body>
+
+<a class="btn-back" href="trivial-login.html">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  Volver
+</a>
+
+<div class="page">
+
+  <div class="header">
+    <span class="brand">Trivial</span>
+    <h1>Elige el modo<br>de juego</h1>
+    <p>¿Contra quién quieres competir hoy?</p>
+  </div>
+
+  <div class="cards">
+
+    <!-- ONLINE -->
+    <div class="mode-card" onclick="selectMode('online')">
+      <div class="icon-box">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+
+      <div>
+        <div class="mode-title">Jugar online</div>
+        <div class="mode-desc">Compite en tiempo real contra otros jugadores. Crea una sala o únete con un código.</div>
+      </div>
+
+      <div class="mode-tags">
+        <span class="tag">Hasta 6 jugadores</span>
+        <span class="tag">Tiempo real</span>
+        <span class="tag">Multijugador</span>
+      </div>
+
+      <div class="mode-arrow">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
+
+    <!-- VS IA -->
+    <div class="mode-card" onclick="selectMode('ia')">
+      <div class="icon-box">
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M8 6V4M16 6V4"/>
+          <circle cx="8.5" cy="12" r="1.5"/>
+          <circle cx="15.5" cy="12" r="1.5"/>
+          <path d="M9 16h6"/>
+        </svg>
+      </div>
+
+      <div>
+        <div class="mode-title">Jugar vs IA</div>
+        <div class="mode-desc">Entrena y pon a prueba tus conocimientos contra la inteligencia artificial.</div>
+      </div>
+
+      <div class="mode-tags">
+        <span class="tag">1 jugador</span>
+        <span class="tag">3 dificultades</span>
+        <span class="tag">Sin espera</span>
+      </div>
+
+      <div class="mode-arrow">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
+
+    <!-- ADMIN — only visible if admin -->
+    <div class="mode-card" id="admin-card" onclick="selectMode('admin')" style="--level-color:var(--green); grid-column:1/-1; padding:20px 28px; display:none;">
+      <div style="display:flex;align-items:center;gap:16px;width:100%">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="mode-title" style="font-size:16px">Panel de administración</div>
+          <div class="mode-desc" style="font-size:12px">Gestiona categorías, preguntas y dificultades</div>
+        </div>
+        <div class="mode-arrow" style="position:relative;bottom:auto;right:auto;opacity:1;transform:none;margin-left:auto">
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function selectMode(mode) {
+  if (mode === 'online') {
+    window.location.href = 'trivial-lobby.html';
+  } else if (mode === 'ia') {
+    window.location.href = 'trivial-ia-nivel.html';
+  } else if (mode === 'admin') {
+    window.location.href = 'trivial-admin.html';
+  }
+}
+
+// Show admin button only for admin role
+if (sessionStorage.getItem('player_role') === 'admin') {
+  document.getElementById('admin-card').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>

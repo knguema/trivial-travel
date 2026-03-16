@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivial — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --green:   #18c25a;
+  --green-d: #12a84c;
+  --white:   #ffffff;
+  --text:    #0a1a10;
+  --muted:   #4d7560;
+  --border:  #c6e8d4;
+  --bg:      #f4fbf7;
+  --surface: #ffffff;
+}
+
+html, body {
+  min-height: 100%;
+  font-family: 'Barlow', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 8px rgba(24,194,90,0.06);
+}
+
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+
+.brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 18px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--green);
+}
+
+.topbar-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  background: rgba(24,194,90,0.1);
+  color: var(--green);
+  padding: 3px 10px; border-radius: 2px;
+}
+
+.btn-back-top {
+  display: flex; align-items: center; gap: 6px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 3px; padding: 8px 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 12px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); cursor: pointer;
+  text-decoration: none; transition: all .15s;
+}
+.btn-back-top:hover { border-color: var(--green); color: var(--green); }
+.btn-back-top svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 56px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  padding: 24px 16px;
+}
+
+.sidebar-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); padding: 0 8px;
+  margin-bottom: 8px; display: block;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 4px;
+  cursor: pointer; transition: all .15s;
+  font-size: 14px; font-weight: 500;
+  color: var(--muted); margin-bottom: 2px;
+}
+
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: rgba(24,194,90,0.1); color: var(--green); font-weight: 600; }
+
+.nav-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+
+.nav-count {
+  margin-left: auto;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 11px;
+  background: var(--bg); padding: 2px 7px;
+  border-radius: 10px; color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.sidebar-section { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* ── MAIN ── */
+.main { padding: 32px; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.page-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px; gap: 16px;
+}
+
+.page-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 28px;
+  text-transform: uppercase; letter-spacing: -0.5px;
+  color: var(--text); line-height: 1;
+  margin-bottom: 4px;
+}
+
+.page-sub { font-size: 13px; color: var(--muted); }
+
+/* ── MESSAGES ── */
+.msg {
+  display: none; padding: 12px 16px; border-radius: 3px;
+  font-size: 13px; font-weight: 500; margin-bottom: 20px;
+  border-left: 3px solid;
+}
+.msg.error   { background:#fef2f2; color:#991b1b; border-color:#ef4444; display:block; }
+.msg.success { background:#f0fdf4; color:#14532d; border-color:var(--green); display:block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 4px; overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.card-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text);
+}
+
+.card-body { padding: 20px; }
+
+/* ── QUESTION ITEM ── */
+.q-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.q-item:last-child { border-bottom: none; }
+.q-item:hover { background: var(--bg); }
+
+.q-diff-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 2px;
+  flex-shrink: 0; margin-top: 2px;
+}
+.q-diff-badge.easy   { background:rgba(24,194,90,0.12); color:var(--green); }
+.q-diff-badge.medio  { background:rgba(245,166,35,0.12); color:#b07a10; }
+.q-diff-badge.dificil{ background:rgba(232,69,69,0.12); color:#c0392b; }
+
+.q-text-wrap { flex: 1; }
+.q-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.q-answer { font-size: 12px; color: var(--muted); }
+
+.q-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.btn-icon {
+  width: 30px; height: 30px; border-radius: 3px;
+  border: 1px solid var(--border); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; color: var(--muted);
+}
+.btn-icon:hover { border-color: var(--green); color: var(--green); }
+.btn-icon.danger:hover { border-color: #e84545; color: #e84545; }
+.btn-icon svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── FORMS ── */
+.field { margin-bottom: 16px; }
+
+.field label {
+  display: block; font-size: 10px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text); margin-bottom: 7px;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%; padding: 11px 13px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 3px; font-family: 'Barlow', sans-serif;
+  font-size: 14px; color: var(--text); outline: none;
+  transition: all .15s; resize: vertical;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--green); background: var(--white);
+  box-shadow: 0 0 0 3px rgba(24,194,90,0.07);
+}
+
+.field input::placeholder, .field textarea::placeholder { color: #aecfbc; }
+
+.field select { cursor: pointer; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 11px 22px; border: none; border-radius: 3px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 13px;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-d); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); font-size:12px; }
+.btn-ghost:hover { border-color: var(--green); color: var(--green); }
+.btn-danger { background: #e84545; color: #fff; }
+.btn-danger:hover { background: #c0392b; }
+.btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+/* ── STATS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+
+.stat-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 4px; padding: 18px 20px;
+}
+.stat-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 32px; color: var(--text);
+  line-height: 1; margin-bottom: 4px;
+}
+.stat-num span { color: var(--green); }
+.stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 500;
+  align-items: center; justify-content: center;
+  padding: 24px;
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--white); border-radius: 4px;
+  width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: modalIn .3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes modalIn {
+  from { opacity:0; transform:scale(0.95) translateY(10px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 20px;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+
+.modal-close {
+  width: 32px; height: 32px; border-radius: 3px;
+  border: 1px solid var(--border); background: transparent;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: var(--muted);
+  transition: all .15s;
+}
+.modal-close:hover { border-color: var(--green); color: var(--green); }
+.modal-close svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+
+.filter-bar input {
+  flex: 1; min-width: 200px;
+  padding: 9px 13px; background: var(--white);
+  border: 1.5px solid var(--border); border-radius: 3px;
+  font-family: 'Barlow', sans-serif; font-size: 14px;
+  color: var(--text); outline: none; transition: all .15s;
+}
+.filter-bar input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(24,194,90,0.07); }
+
+.filter-bar select {
+  padding: 9px 13px; background: var(--white);
+  border: 1.5px solid var(--border); border-radius: 3px;
+  font-family: 'Barlow', sans-serif; font-size: 13px;
+  color: var(--text); outline: none; cursor: pointer;
+  transition: all .15s;
+}
+.filter-bar select:focus { border-color: var(--green); }
+
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="brand">Trivial</span>
+    <span class="topbar-badge">Admin</span>
+  </div>
+  <a class="btn-back-top" href="trivial-modos.html">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Salir
+  </a>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Nueva pregunta</span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <span class="sidebar-title">Categorías</span>
+    <div id="sidebar-cats"></div>
+
+    <div class="sidebar-section">
+      <span class="sidebar-title">Panel</span>
+      <div class="nav-item" onclick="showPage('dashboard')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Resumen
+      </div>
+      <div class="nav-item" onclick="showPage('users')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Jugadores
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Jugadores</div>
+          <div class="page-sub">Usuarios registrados en el sistema</div>
+        </div>
+        <button class="btn btn-primary" onclick="loadUsers()">
+          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualizar
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Lista de jugadores registrados</span>
+          <span id="users-count" style="font-size:12px;color:var(--muted)">0 jugadores</span>
+        </div>
+        <div id="users-list" style="padding:8px"></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Resumen</div>
+          <div class="page-sub">Estado actual del banco de preguntas</div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('questions'); openNewQuestion()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva pregunta
+        </button>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Distribución por categoría y dificultad</span>
+        </div>
+        <div class="card-body" id="distribution-table"></div>
+      </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="page" id="page-questions">
+      <div class="page-header">
+        <div>
+          <div class="page-title" id="questions-title">Preguntas</div>
+          <div class="page-sub" id="questions-sub">Todas las categorías</div>
+        </div>
+        <button class="btn btn-primary" onclick="openNewQuestion()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Añadir pregunta
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="search-input" placeholder="Buscar pregunta..." oninput="renderQuestions()">
+        <select id="filter-cat" onchange="renderQuestions()">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select id="filter-diff" onchange="renderQuestions()">
+          <option value="">Todas las dificultades</option>
+          <option value="fácil">Fácil</option>
+          <option value="medio">Medio</option>
+          <option value="difícil">Difícil</option>
+        </select>
+      </div>
+
+      <div id="msg-questions" class="msg"></div>
+      <div id="questions-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SERVER = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : window.location.origin;
+
+const TENANT = 'default';
+
+const CAT_META = {
+  sports:  { name:'Sports',    color:'#18c25a' },
+  geo:     { name:'Geography', color:'#3B9EFF' },
+  culture: { name:'Culture',   color:'#f5a623' },
+  history: { name:'History',   color:'#e84545' },
+  eu:      { name:'EU',        color:'#a259ff' },
+};
+
+let data = { categories: [], questions: {} };
+let currentCat = null;
+let editingQ = null; // { catId, idx }
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const r = await fetch(`${SERVER}/api/tenant/${TENANT}`);
+    if (!r.ok) throw new Error();
+    const raw = await r.json();
+    // Merge with CAT_META for colors
+    data.categories = raw.categories && raw.categories.length
+      ? raw.categories
+      : Object.entries(CAT_META).map(([id, m]) => ({ id, ...m }));
+    data.questions = raw.questions && Object.keys(raw.questions).length
+      ? raw.questions
+      : {};
+    // If no questions loaded, initialize empty arrays per category
+    data.categories.forEach(c => {
+      if (!data.questions[c.id]) data.questions[c.id] = [];
+    });
+  } catch {
+    data.categories = Object.entries(CAT_META).map(([id, m]) => ({ id, ...m }));
+    data.questions = {};
+    data.categories.forEach(c => { data.questions[c.id] = []; });
+  }
+  renderSidebar();
+  renderDashboard();
+  renderFilterSelects();
+  renderQuestions();
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const el = document.getElementById('sidebar-cats');
+  el.innerHTML = data.categories.map(cat => {
+    const count = (data.questions[cat.id] || []).length;
+    return `
+      <div class="nav-item ${currentCat === cat.id ? 'active' : ''}"
+           onclick="filterByCat('${cat.id}')">
+        <div class="nav-dot" style="background:${cat.color || CAT_META[cat.id]?.color || '#888'}"></div>
+        ${cat.name}
+        <span class="nav-count">${count}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterByCat(catId) {
+  currentCat = catId;
+  document.getElementById('filter-cat').value = catId;
+  renderSidebar();
+  renderQuestions();
+  showPage('questions');
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const allQ = Object.values(data.questions).flat();
+  const total = allQ.length;
+  const easy   = allQ.filter(q => q.diff === 'fácil').length;
+  const medium = allQ.filter(q => q.diff === 'medio').length;
+  const hard   = allQ.filter(q => q.diff === 'difícil').length;
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Preguntas totales</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#18c25a">${easy}</div><div class="stat-label">Fáciles</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#f5a623">${medium}</div><div class="stat-label">Medias</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#e84545">${hard}</div><div class="stat-label">Difíciles</div></div>
+  `;
+
+  const rows = data.categories.map(cat => {
+    const qs = data.questions[cat.id] || [];
+    const e = qs.filter(q => q.diff === 'fácil').length;
+    const m = qs.filter(q => q.diff === 'medio').length;
+    const h = qs.filter(q => q.diff === 'difícil').length;
+    return `
+      <tr>
+        <td style="padding:10px 14px; display:flex; align-items:center; gap:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${cat.color || CAT_META[cat.id]?.color || '#888'};flex-shrink:0"></div>
+          ${cat.name}
+        </td>
+        <td style="padding:10px 14px; text-align:center; color:#18c25a; font-weight:600">${e}</td>
+        <td style="padding:10px 14px; text-align:center; color:#f5a623; font-weight:600">${m}</td>
+        <td style="padding:10px 14px; text-align:center; color:#e84545; font-weight:600">${h}</td>
+        <td style="padding:10px 14px; text-align:center; font-weight:700">${qs.length}</td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('distribution-table').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:8px 14px;text-align:left;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700">Categoría</th>
+          <th style="padding:8px 14px;text-align:center;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#18c25a;font-weight:700">Fácil</th>
+          <th style="padding:8px 14px;text-align:center;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#f5a623;font-weight:700">Medio</th>
+          <th style="padding:8px 14px;text-align:center;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#e84545;font-weight:700">Difícil</th>
+          <th style="padding:8px 14px;text-align:center;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700">Total</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ── QUESTIONS LIST ────────────────────────────────────────────────────────────
+function renderFilterSelects() {
+  const sel = document.getElementById('filter-cat');
+  sel.innerHTML = '<option value="">Todas las categorías</option>' +
+    data.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function renderQuestions() {
+  const search  = document.getElementById('search-input').value.toLowerCase();
+  const catF    = document.getElementById('filter-cat').value;
+  const diffF   = document.getElementById('filter-diff').value;
+
+  const cat = catF ? data.categories.find(c => c.id === catF) : null;
+  document.getElementById('questions-title').textContent = cat ? cat.name : 'Preguntas';
+  document.getElementById('questions-sub').textContent = cat
+    ? `${(data.questions[catF]||[]).length} preguntas` : 'Todas las categorías';
+
+  let items = [];
+  Object.entries(data.questions).forEach(([catId, qs]) => {
+    if (catF && catId !== catF) return;
+    qs.forEach((q, idx) => {
+      if (diffF && q.diff !== diffF) return;
+      if (search && !q.q.toLowerCase().includes(search) && !q.a.toLowerCase().includes(search)) return;
+      items.push({ catId, idx, q });
+    });
+  });
+
+  const el = document.getElementById('questions-list');
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">No hay preguntas que coincidan</div>`;
+    return;
+  }
+
+  // Group by category
+  const byCat = {};
+  items.forEach(item => {
+    if (!byCat[item.catId]) byCat[item.catId] = [];
+    byCat[item.catId].push(item);
+  });
+
+  el.innerHTML = Object.entries(byCat).map(([catId, qItems]) => {
+    const catMeta = data.categories.find(c => c.id === catId) || CAT_META[catId] || {};
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${catMeta.color || '#888'}"></div>
+            <span class="card-title">${catMeta.name || catId}</span>
+            <span style="font-size:11px;color:var(--muted);font-weight:400">${qItems.length} preguntas</span>
+          </div>
+        </div>
+        <div>
+          ${qItems.map(({catId, idx, q}) => `
+            <div class="q-item">
+              <span class="q-diff-badge ${q.diff === 'fácil' ? 'easy' : q.diff === 'medio' ? 'medio' : 'dificil'}">${q.diff}</span>
+              <div class="q-text-wrap">
+                <div class="q-text">${q.q}</div>
+                <div class="q-answer">Respuesta: <strong>${q.a}</strong></div>
+              </div>
+              <div class="q-actions">
+                <button class="btn-icon" onclick="editQuestion('${catId}', ${idx})" title="Editar">
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon danger" onclick="deleteQuestion('${catId}', ${idx})" title="Eliminar">
+                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── QUESTION MODAL ────────────────────────────────────────────────────────────
+function openNewQuestion() {
+  editingQ = null;
+  document.getElementById('modal-title').textContent = 'Nueva pregunta';
+  document.getElementById('modal-body').innerHTML = questionForm(null);
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveQuestion()">Guardar pregunta</button>
+  `;
+  openModal();
+}
+
+function editQuestion(catId, idx) {
+  editingQ = { catId, idx };
+  const q = data.questions[catId][idx];
+  document.getElementById('modal-title').textContent = 'Editar pregunta';
+  document.getElementById('modal-body').innerHTML = questionForm(q, catId);
+  document.getElementById('modal-footer').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveQuestion()">Guardar cambios</button>
+  `;
+  openModal();
+}
+
+function questionForm(q, selectedCat) {
+  const cats = data.categories.map(c =>
+    `<option value="${c.id}" ${selectedCat === c.id ? 'selected' : ''}>${c.name}</option>`
+  ).join('');
+
+  const opts = q ? q.opts : ['','',''];
+  const wrongOpts = q ? q.opts.filter(o => o !== q.a) : ['',''];
+
+  return `
+    <div class="field">
+      <label>Categoría</label>
+      <select id="q-cat">${cats}</select>
+    </div>
+    <div class="field">
+      <label>Pregunta</label>
+      <textarea id="q-text" rows="3" placeholder="Escribe la pregunta aquí...">${q ? q.q : ''}</textarea>
+    </div>
+    <div class="field">
+      <label>Respuesta correcta</label>
+      <input type="text" id="q-answer" value="${q ? q.a : ''}" placeholder="Respuesta correcta">
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Opción 2</label>
+        <input type="text" id="q-opt2" value="${wrongOpts[0] || ''}" placeholder="Opción incorrecta">
+      </div>
+      <div class="field">
+        <label>Opción 3</label>
+        <input type="text" id="q-opt3" value="${wrongOpts[1] || ''}" placeholder="Opción incorrecta">
+      </div>
+    </div>
+    <div class="field">
+      <label>Dificultad</label>
+      <select id="q-diff">
+        <option value="fácil"   ${q?.diff === 'fácil'   ? 'selected' : ''}>Fácil (+1 punto)</option>
+        <option value="medio"   ${q?.diff === 'medio'   ? 'selected' : ''}>Medio (+2 puntos)</option>
+        <option value="difícil" ${q?.diff === 'difícil' ? 'selected' : ''}>Difícil (+3 puntos)</option>
+      </select>
+    </div>
+  `;
+}
+
+function saveQuestion() {
+  const catId  = document.getElementById('q-cat').value;
+  const text   = document.getElementById('q-text').value.trim();
+  const answer = document.getElementById('q-answer').value.trim();
+  const opt2   = document.getElementById('q-opt2').value.trim();
+  const opt3   = document.getElementById('q-opt3').value.trim();
+  const diff   = document.getElementById('q-diff').value;
+
+  if (!text)   return alert('Introduce la pregunta');
+  if (!answer) return alert('Introduce la respuesta correcta');
+  if (!opt2)   return alert('Introduce al menos la opción 2');
+
+  const opts = [answer, opt2, opt3].filter(Boolean);
+  const entry = { q: text, a: answer, opts, diff };
+
+  if (!data.questions[catId]) data.questions[catId] = [];
+
+  if (editingQ && editingQ.catId === catId) {
+    data.questions[catId][editingQ.idx] = entry;
+  } else if (editingQ && editingQ.catId !== catId) {
+    // Moved to different category
+    data.questions[editingQ.catId].splice(editingQ.idx, 1);
+    data.questions[catId].push(entry);
+  } else {
+    data.questions[catId].push(entry);
+  }
+
+  closeModal();
+  saveToServer();
+  refresh();
+}
+
+function deleteQuestion(catId, idx) {
+  if (!confirm('¿Eliminar esta pregunta?')) return;
+  data.questions[catId].splice(idx, 1);
+  saveToServer();
+  refresh();
+}
+
+// ── SAVE ─────────────────────────────────────────────────────────────────────
+async function saveToServer() {
+  try {
+    await fetch(`${SERVER}/api/tenant/${TENANT}/questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questions: data.questions })
+    });
+    showMsg('Guardado correctamente', 'success');
+  } catch {
+    showMsg('Guardado localmente (servidor no disponible)', 'error');
+  }
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg-questions');
+  el.textContent = text;
+  el.className = `msg ${type}`;
+  setTimeout(() => { el.className = 'msg'; }, 3000);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+}
+
+function refresh() {
+  renderSidebar();
+  renderDashboard();
+  renderQuestions();
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const r = await fetch(`${SERVER}/api/users`);
+    const list = await r.json();
+    document.getElementById('users-count').textContent = `${list.length} jugador${list.length !== 1 ? 'es' : ''}`;
+
+    const el = document.getElementById('users-list');
+    if (!list.length) {
+      el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px">No hay jugadores registrados todavía</div>`;
+      return;
+    }
+
+    el.innerHTML = list.map((u, i) => `
+      <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--border);${i === list.length-1 ? 'border-bottom:none' : ''}">
+        <div style="width:34px;height:34px;border-radius:50%;background:${['#18c25a','#3B9EFF','#f5a623','#e84545','#a259ff'][i % 5]};display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#fff;flex-shrink:0">
+          ${u.name.charAt(0).toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">${u.name}</div>
+          <div style="font-size:12px;color:var(--muted)">${u.email}</div>
+        </div>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:2px;background:rgba(24,194,90,0.1);color:var(--green)">
+          ${u.role}
+        </span>
+      </div>
+    `).join('');
+  } catch {
+    document.getElementById('users-list').innerHTML = `<div style="padding:20px;color:var(--muted)">Error al cargar jugadores</div>`;
+  }
+}
+
+// ── START ─────────────────────────────────────────────────────────────────────
+// Check admin role
+const _role = sessionStorage.getItem('player_role');
+if (_role !== 'admin') {
+  window.location.href = 'trivial-login.html';
+} else {
+  loadData();
+  loadUsers();
+}
+</script>
+
+</body>
+</html>
