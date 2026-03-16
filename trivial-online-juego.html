@@ -1266,6 +1266,7 @@ function revealCategory(cat, room) {
 
   reveal.classList.add('show');
   Audio.categoryReveal();
+  console.log('🎡 Categoria seleccionada:', selectedCatId, 'dificultad:', diff);
   setTimeout(() => {
     socket.emit('game:spinResult', { categoryId: selectedCatId, difficulty: diff });
     reveal.classList.remove('show');
