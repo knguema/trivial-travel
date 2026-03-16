@@ -9,8 +9,8 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :root {
-  --green:   #18c25a;
-  --green-d: #12a84c;
+  --green:   #2d7dd2;
+  --green-d: #1a6ab8;
   --white:   #ffffff;
   --text:    #0a1a10;
   --muted:   #4d7560;
@@ -519,6 +519,9 @@ html, body {
       <span class="brand">Trivial — Online</span>
       <h1>Sala de juego</h1>
       <p>Crea una sala o únete con el código de un amigo</p>
+      <div id="wins-badge" style="display:none;margin-top:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--green);background:rgba(45,125,210,0.1);padding:5px 16px;border-radius:20px;border:1px solid rgba(45,125,210,0.2)">
+        🏆 <span id="wins-count">0</span> partidas ganadas
+      </div>
     </div>
 
     <div class="card">
@@ -627,8 +630,19 @@ let players = [];
 
 const COLORS = ['#18c25a','#3B9EFF','#f5a623','#e84545','#a259ff','#ff6b6b'];
 
-// ── SOCKET ────────────────────────────────────────────────────────────────────
-function initSocket(callback) {
+// ── WINS ─────────────────────────────────────────────────────────────────────
+async function loadWins() {
+  const name = sessionStorage.getItem('player_name');
+  if (!name || name === 'Invitado') return;
+  try {
+    const r = await fetch(`${SERVER}/api/wins/${encodeURIComponent(name)}`);
+    const data = await r.json();
+    document.getElementById('wins-count').textContent = data.wins || 0;
+    document.getElementById('wins-badge').style.display = 'inline-block';
+  } catch {}
+}
+
+window.addEventListener('DOMContentLoaded', loadWins);
   if (socket && socket.connected) {
     callback();
     return;
