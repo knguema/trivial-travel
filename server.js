@@ -367,13 +367,14 @@ io.on('connection', (socket) => {
   });
 
   // Start game (host only)
-  socket.on('game:start', () => {
+  socket.on('game:start', ({ rounds } = {}) => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room || room.host !== socket.id) return;
     if (room.players.length < 1) return;
     room.state = 'spinning';
     room.questionIdx = 0;
+    room.totalRounds = rounds || 10;
     // Emit game:start so lobby redirects everyone
     io.to(code).emit('game:start', { roomCode: code });
     // After a short delay broadcast spinning state for when they reconnect
@@ -450,7 +451,7 @@ io.on('connection', (socket) => {
 
     room.questionIdx = (room.questionIdx || 0) + 1;
 
-    if (room.questionIdx >= 10) {
+    if (room.questionIdx >= (room.totalRounds || 10)) {
       room.state = 'finished';
       // Track stats for ALL players
       const sorted = [...room.players].sort((a, b) => b.score - a.score);
