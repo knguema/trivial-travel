@@ -1100,38 +1100,30 @@ function spinWheel() {
 
 function doSpin(catId, diff, special, isMeTurn) {
   if (isSpinning) return;
+  isSpinning = true;
 
   const cat = categories.find(c => c.id === catId);
-  if (!cat) return;
+  if (!cat) { isSpinning = false; return; }
 
   const n = categories.length;
   const catIdx = categories.findIndex(c => c.id === catId);
   const slice = (2 * Math.PI) / n;
 
-  // Pointer is on the LEFT (angle = π in screen space).
-  // Slice i is drawn from: spinAngle - π/2 + i*slice  to  spinAngle - π/2 + (i+1)*slice
-  // Pointer hits slice i when its screen angle = π, i.e.:
-  //   spinAngle - π/2 + i*slice <= π <= spinAngle - π/2 + (i+1)*slice
-  // => spinAngle = π + π/2 - i*slice - slice/2  (center of slice under pointer)
-  // => spinAngle = 3π/2 - catIdx*slice - slice/2
+  // Pointer is on the LEFT side of canvas (x=0, y=cy → screen angle = π)
+  // drawWheel draws slice i starting at: spinAngle - π/2 + i*slice
+  // Center of slice i is at: spinAngle - π/2 + i*slice + slice/2
+  // We want center to be at π (left pointer):
+  //   spinAngle - π/2 + catIdx*slice + slice/2 = π
+  //   spinAngle = π + π/2 - catIdx*slice - slice/2
+  //   spinAngle = 3π/2 - catIdx*slice - slice/2
   const targetAngle = (3 * Math.PI / 2) - catIdx * slice - slice / 2;
+  const curNorm = ((spinAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  const tgtNorm = ((targetAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+  const extra = 5 + Math.random() * 3;
+  const angleDiff = ((tgtNorm - curNorm) + Math.PI*2) % (Math.PI*2);
+  const target = spinAngle + extra * Math.PI * 2 + angleDiff;
 
-  // Add extra full rotations so it spins visibly
-  const extra = 5 + Math.random() * 4;
-  const diff2 = ((targetAngle - (spinAngle % (Math.PI*2))) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-  const target = spinAngle + extra * Math.PI * 2 + diff2;
-
-  // If not my turn — just show the result instantly (no animation for spectators)
-  if (!isMeTurn) {
-    spinAngle = target % (Math.PI * 2);
-    drawWheel(categories, spinAngle);
-    showReveal(cat, diff, special);
-    return;
-  }
-
-  // My turn — animate
-  isSpinning = true;
-  const dur = 4200;
+  const dur = isMeTurn ? 4200 : 3800;
   const start = performance.now();
   const startAng = spinAngle;
   const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
@@ -1143,14 +1135,18 @@ function doSpin(catId, diff, special, isMeTurn) {
     if (p < 1) { requestAnimationFrame(frame); return; }
 
     isSpinning = false;
-    spinAngle = target % (Math.PI * 2);
-    drawWheel(categories, spinAngle);
+    spinAngle = tgtNorm; // snap to exact angle
+    drawWheel(categories, spinAngle, catId); // highlight winning slice
+
+    // Show reveal to everyone
     showReveal(cat, diff, special);
 
-    // Send spinResult to server
-    setTimeout(() => {
-      socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special || null });
-    }, 1900);
+    // Only current player sends spinResult after reveal
+    if (isMeTurn) {
+      setTimeout(() => {
+        socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special || null });
+      }, 2000);
+    }
   }
   requestAnimationFrame(frame);
 }
@@ -1190,7 +1186,7 @@ function showReveal(cat, diff, special) {
   }
 
   reveal.classList.add('show');
-  setTimeout(() => reveal.classList.remove('show'), 2000);
+  setTimeout(() => reveal.classList.remove('show'), 2500);
 }
 
 function drawWheel(cats, angle, highlightId = null) {
@@ -1568,11 +1564,11 @@ function connectSocket() {
     window.location.href = `trivial-online-juego.html?room=${roomCode}&player=${encodeURIComponent(MY_NAME)}&host=${IS_HOST}`;
   });
 
-  // ALL players receive category result
-  // ALL players receive same spin result — only current player animates
+  // ALL players receive same spin result and animate
   socket.on('game:doSpin', ({ catId, diff, special }) => {
-    const isMeTurn = myPlayer && roomState &&
-      roomState.players[roomState.currentPlayerIdx]?.id === myPlayer.id;
+    if (!roomState) return;
+    const cp = roomState.players[roomState.currentPlayerIdx];
+    const isMeTurn = myPlayer && cp && cp.id === myPlayer.id;
     doSpin(catId, diff, special, isMeTurn);
   });
 
