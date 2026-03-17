@@ -91,89 +91,91 @@ html, body {
    SPIN SCREEN (ruleta)
 ══════════════════════════════════════ */
 #screen-spin {
-  background: #0a0e1a;
-  gap: 24px;
-  justify-content: center;
-  padding: 40px 24px;
-  align-items: center;
+  background: #0d1130;
+  gap: 0;
+  justify-content: space-between;
+  padding: 20px 24px 28px;
 }
 
-.spin-top { text-align: center; }
+.spin-top {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px; width: 100%;
+}
 
 .turn-banner {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 13px;
-  letter-spacing: 3px; text-transform: uppercase;
-  color: rgba(255,255,255,0.4); margin-bottom: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px; padding: 9px 24px;
+  font-size: 13px; color: rgba(255,255,255,0.55);
 }
-.turn-banner strong { color: #fff; font-size: 20px; }
+.turn-banner strong { color: #fff; font-weight: 600; }
 
 .round-badge {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700; font-size: 11px;
   letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(255,255,255,0.25); margin-top: 4px;
+  color: rgba(255,255,255,0.25);
 }
 
-/* Category result card */
-.cat-result-card {
-  width: 100%; max-width: 400px;
-  border-radius: 16px; padding: 36px 32px;
-  text-align: center; border: 2px solid;
-  animation: popIn .4s cubic-bezier(0.16,1,0.3,1) both;
+/* ── WHEEL ── */
+.wheel-wrap {
+  position: relative;
+  width: min(340px, 78vw);
+  height: min(340px, 78vw);
+  flex-shrink: 0;
 }
+
+.wheel-pointer {
+  position: absolute;
+  left: -18px; top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  width: 0; height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 30px solid #2d7dd2;
+  filter: drop-shadow(0 0 8px rgba(45,125,210,0.9));
+  z-index: 10;
+}
+
+#wheel-canvas { border-radius: 50%; display: block; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+
+.wheel-center {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 48px; height: 48px;
+  background: #0d1130; border-radius: 50%;
+  border: 3px solid #2d7dd2; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800; font-size: 11px;
+  color: #2d7dd2; letter-spacing: 1px;
+}
+
+/* ── CATEGORY REVEAL ── */
+.cat-reveal {
+  display: none; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding: 16px 28px; border-radius: 8px; border: 1.5px solid;
+  animation: popIn .45s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  min-width: 220px; text-align: center;
+}
+.cat-reveal.show { display: flex; }
+
 @keyframes popIn {
-  from { opacity:0; transform:scale(0.8) translateY(20px); }
-  to   { opacity:1; transform:scale(1) translateY(0); }
-}
-.cat-result-emoji { font-size: 56px; margin-bottom: 12px; display:block; }
-.cat-result-name {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900; font-size: 40px;
-  text-transform: uppercase; letter-spacing: 1px;
-  color: #fff; margin-bottom: 10px; display:block;
-}
-.cat-result-diff {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 13px;
-  letter-spacing: 2px; text-transform: uppercase;
-  padding: 5px 16px; border-radius: 4px;
-  display: inline-block; margin-bottom: 8px;
-}
-.cat-result-desc {
-  font-size: 13px; color: rgba(255,255,255,0.5);
-  margin-top: 8px; display:block;
+  from { opacity:0; transform: scale(0.6); }
+  to   { opacity:1; transform: scale(1); }
 }
 
-/* Category picker */
-.spin-hint {
+.cat-reveal-label {
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(255,255,255,0.3); margin-bottom: 14px;
+  font-weight: 700; font-size: 10px;
+  letter-spacing: 2.5px; text-transform: uppercase; opacity: 0.6;
 }
-.spin-cats {
-  display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 8px; margin-bottom: 16px; width: 100%; max-width: 480px;
-}
-.spin-cat-btn {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 5px;
-  padding: 12px 6px;
-  background: rgba(255,255,255,0.05);
-  border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 10px; cursor: pointer;
-  transition: all .15s; font-size: 24px;
-}
-.spin-cat-btn span {
+
+.cat-reveal-name {
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 9px;
-  letter-spacing: 1px; text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-}
-.spin-cat-btn:hover {
-  transform: translateY(-4px) scale(1.05);
-  background: rgba(255,255,255,0.12);
+  font-weight: 800; font-size: 28px;
+  text-transform: uppercase; letter-spacing: -0.5px; line-height: 1;
 }
 
 /* ── DIFFICULTY SELECTOR ── */
@@ -771,19 +773,21 @@ html, body {
     <div class="round-badge" id="spin-round-badge">Ronda 1 / 6</div>
   </div>
 
-  <!-- Category result card — visible to ALL -->
-  <div class="cat-result-card" id="cat-result-card" style="display:none">
-    <div class="cat-result-emoji" id="cat-result-emoji">🎯</div>
-    <div class="cat-result-name" id="cat-result-name">—</div>
-    <div class="cat-result-diff" id="cat-result-diff"></div>
-    <div class="cat-result-desc" id="cat-result-desc"></div>
+  <div class="wheel-wrap">
+    <div class="wheel-pointer"></div>
+    <canvas id="wheel-canvas" width="340" height="340"></canvas>
+    <div class="wheel-center">GIRA</div>
   </div>
 
-  <!-- Spin button — only for current player -->
+  <!-- Category reveal (appears after spin) -->
+  <div class="cat-reveal" id="cat-reveal">
+    <span class="cat-reveal-label">Categoría</span>
+    <span class="cat-reveal-name" id="cat-reveal-name">—</span>
+  </div>
+
+  <!-- Spin button / waiting -->
   <div class="spin-controls" id="spin-controls">
-    <div class="spin-hint">Elige una categoría</div>
-    <div class="spin-cats" id="spin-cats"></div>
-    <button class="btn-main" id="btn-spin" onclick="randomPick()">🎲 Aleatorio</button>
+    <button class="btn-main" id="btn-spin" onclick="spinWheel()">Girar ruleta</button>
   </div>
 
   <div class="spin-waiting" id="spin-wait">
@@ -1058,53 +1062,179 @@ const Audio = (() => {
   };
 })();
 
+let spinAngle = 0;
+let isSpinning = false;
+
 function showSpin(room) {
   showScreen('spin');
   const cp = room.players[room.currentPlayerIdx];
   document.getElementById('turn-name').textContent = cp ? cp.name : '—';
   document.getElementById('spin-round-badge').textContent = `Ronda ${room.currentRound||1} / ${room.totalRounds||6}`;
+  drawWheel(categories, spinAngle);
+
+  isSpinning = false;
+  document.getElementById('cat-reveal').classList.remove('show');
 
   const myTurn = myPlayer && cp && cp.id === myPlayer.id;
-
-  // Hide result card initially
-  document.getElementById('cat-result-card').style.display = 'none';
-
-  // Build category buttons for current player
-  const spinCats = document.getElementById('spin-cats');
-  if (spinCats) {
-    spinCats.innerHTML = categories.filter(c => !c.special).map(cat => `
-      <div class="spin-cat-btn" onclick="pickCategory('${cat.id}')"
-           style="border-color:${cat.color}20">
-        <span style="font-size:24px">${cat.emoji}</span>
-        <span>${cat.name}</span>
-      </div>
-    `).join('');
-  }
-
   const controls = document.getElementById('spin-controls');
-  const waitEl = document.getElementById('spin-wait');
+  const waitEl   = document.getElementById('spin-wait');
 
   if (myTurn) {
-    controls.classList.add('visible');
+    controls.style.display = 'flex';
     waitEl.classList.remove('show');
+    document.getElementById('btn-spin').disabled = false;
   } else {
-    controls.classList.remove('visible');
+    controls.style.display = 'none';
     waitEl.classList.add('show');
-    document.getElementById('spin-wait-text').textContent = `${cp ? cp.name : '—'} está eligiendo...`;
+    document.getElementById('spin-wait-text').textContent = `${cp ? cp.name : '—'} está girando...`;
   }
 
   renderMiniScores(room);
 }
 
-function pickCategory(catId) {
-  const cat = categories.find(c => c.id === catId);
-  if (!cat) return;
-  socket.emit('game:startSpin', { catId });
+function spinWheel() {
+  if (isSpinning) return;
+  // Tell server to generate spin — server broadcasts to ALL
+  socket.emit('game:startSpin', { catId: null });
+  document.getElementById('btn-spin').disabled = true;
+  document.getElementById('spin-controls').style.display = 'none';
 }
 
-function randomPick() {
-  socket.emit('game:startSpin', { catId: null });
+function doSpin(catId, diff, special) {
+  if (isSpinning) return;
+  isSpinning = true;
+
+  const cat = categories.find(c => c.id === catId);
+  if (!cat) { isSpinning = false; return; }
+
+  const n = categories.length;
+  const catIdx = categories.findIndex(c => c.id === catId);
+  const slice = (2 * Math.PI) / n;
+
+  // Calculate target angle so pointer (left side) lands on catIdx
+  const pointerTarget = catIdx * slice + slice / 2; // center of slice in wheel space
+  const extra = 6 + Math.random() * 4;
+  const currentNorm = ((Math.PI - spinAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+  const angleDiff = ((pointerTarget - currentNorm) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+  const target = spinAngle + extra * Math.PI * 2 + angleDiff;
+
+  const dur = 4200;
+  const start = performance.now();
+  const startAng = spinAngle;
+  const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+  function frame(now) {
+    const p = Math.min((now - start) / dur, 1);
+    spinAngle = startAng + (target - startAng) * ease(p);
+    drawWheel(categories, spinAngle);
+    if (p < 1) { requestAnimationFrame(frame); return; }
+
+    isSpinning = false;
+    spinAngle = spinAngle % (Math.PI * 2);
+    drawWheel(categories, spinAngle);
+
+    // Show reveal to ALL
+    showReveal(cat, diff, special);
+
+    // Only current player sends spinResult
+    if (myPlayer && roomState) {
+      const cp = roomState.players[roomState.currentPlayerIdx];
+      if (cp && cp.id === myPlayer.id) {
+        setTimeout(() => {
+          socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special || null });
+        }, 1900);
+      }
+    }
+  }
+  requestAnimationFrame(frame);
 }
+
+function showReveal(cat, diff, special) {
+  const reveal = document.getElementById('cat-reveal');
+  reveal.style.background = hexToRgba(cat.color, 0.15);
+  reveal.style.borderColor = hexToRgba(cat.color, 0.6);
+  reveal.style.color = cat.color;
+
+  let nameText = cat.name.toUpperCase();
+  if (special) {
+    const specialNames = { doble:'⚡ x2 Puntos', robo:'💸 Robo', bomba:'💣 Bomba', skip:'⏭️ SKIP' };
+    nameText = specialNames[special] || cat.name.toUpperCase();
+  }
+  document.getElementById('cat-reveal-name').textContent = nameText;
+
+  // Add difficulty badge
+  let badge = document.getElementById('cat-diff-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'cat-diff-badge';
+    badge.style.cssText = 'font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-top:4px;';
+    reveal.appendChild(badge);
+  }
+  if (special) {
+    const specialDesc = { doble:'Pregunta vale el doble', robo:'Si fallas dan puntos al siguiente', bomba:'Si fallas pierdes puntos', skip:'Turno perdido' };
+    badge.textContent = specialDesc[special] || '';
+    badge.style.background = hexToRgba(cat.color, 0.2);
+    badge.style.color = cat.color;
+  } else {
+    const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff] || '';
+    const diffColor = { easy:'#18c25a', medium:'#f5a623', hard:'#e84545' }[diff] || '#fff';
+    badge.textContent = diffLabel;
+    badge.style.background = hexToRgba(diffColor, 0.2);
+    badge.style.color = diffColor;
+  }
+
+  reveal.classList.add('show');
+  setTimeout(() => reveal.classList.remove('show'), 2000);
+}
+
+function drawWheel(cats, angle, highlightId = null) {
+  const canvas = document.getElementById('wheel-canvas');
+  if (!canvas) return;
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const cx = W/2, cy = H/2, r = W/2 - 6;
+  const n = cats.length;
+  const slice = (2 * Math.PI) / n;
+
+  ctx.clearRect(0, 0, W, H);
+
+  cats.forEach((cat, i) => {
+    const s = angle - Math.PI/2 + i * slice;
+    const e = s + slice;
+    const highlight = highlightId === cat.id;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, highlight ? r + 4 : r, s, e);
+    ctx.closePath();
+    ctx.fillStyle = highlight ? lightenColor(cat.color) : cat.color;
+    ctx.fill();
+    ctx.strokeStyle = '#0d1130';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Emoji label
+    const mid = s + slice / 2;
+    const lr = r * 0.68;
+    ctx.save();
+    ctx.translate(cx + Math.cos(mid) * lr, cy + Math.sin(mid) * lr);
+    ctx.rotate(mid + Math.PI/2);
+    ctx.font = `${Math.max(13, Math.min(20, Math.floor(r * slice / 2.2)))}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(cat.emoji || cat.name.charAt(0), 0, 0);
+    ctx.restore();
+  });
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(45,125,210,0.4)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+}
+
 
 function lightenColor(hex) {
   const r = Math.min(255, parseInt(hex.slice(1,3),16) + 60);
@@ -1391,6 +1521,11 @@ function renderMiniScores(room) {
 }
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  drawWheel(categories, 0);
+  connectSocket();
+});
+
 function connectSocket() {
   socket = io(SERVER, { transports: ['polling'], reconnection: true, timeout: 8000 });
 
@@ -1410,16 +1545,9 @@ function connectSocket() {
   });
 
   // ALL players receive category result
+  // ALL players animate the wheel to same result
   socket.on('game:doSpin', ({ catId, diff, special }) => {
-    showCategoryResult(catId, diff, special);
-    if (myPlayer && roomState) {
-      const cp = roomState.players[roomState.currentPlayerIdx];
-      if (cp && cp.id === myPlayer.id) {
-        setTimeout(() => {
-          socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special });
-        }, 2000);
-      }
-    }
+    doSpin(catId, diff, special);
   });
 
   socket.on('error', (data) => {
