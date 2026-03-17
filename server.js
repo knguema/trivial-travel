@@ -259,6 +259,36 @@ function getRandomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function getUniqueQuestion(room, categoryId, diffLabel) {
+  const td = getTenantData(room.tenantId);
+  const allForCat = td.questions[categoryId] || [];
+  const pool = diffLabel
+    ? allForCat.filter(q => q.diff === diffLabel)
+    : allForCat;
+
+  if (!pool.length) return allForCat[Math.floor(Math.random() * allForCat.length)] || null;
+
+  // Init used tracking
+  if (!room.usedQuestions) room.usedQuestions = {};
+  if (!room.usedQuestions[categoryId]) room.usedQuestions[categoryId] = [];
+
+  // Filter out already used questions
+  const used = room.usedQuestions[categoryId];
+  let available = pool.filter((_, i) => !used.includes(pool.indexOf(pool[i])));
+
+  // If all used, reset for this category
+  if (!available.length) {
+    room.usedQuestions[categoryId] = [];
+    available = pool;
+  }
+
+  // Pick random from available
+  const picked = available[Math.floor(Math.random() * available.length)];
+  const globalIdx = allForCat.indexOf(picked);
+  room.usedQuestions[categoryId].push(globalIdx);
+  return picked;
+}
+
 function getTenantData(tenantId) {
   if (!tenants[tenantId]) {
     tenants[tenantId] = {
@@ -405,10 +435,11 @@ io.on('connection', (socket) => {
     if (!room || room.host !== socket.id) return;
     if (room.players.length < 1) return;
     room.state = 'spinning';
-    room.currentRound = 1;           // current round number
-    room.turnInRound  = 0;           // how many players have played in this round
-    room.totalRounds  = rounds || 6; // total rounds to play
+    room.currentRound = 1;
+    room.turnInRound  = 0;
+    room.totalRounds  = rounds || 6;
     room.currentPlayerIdx = 0;
+    room.usedQuestions = {}; // { categoryId: Set of used indices }
     io.to(code).emit('game:start', { roomCode: code });
     setTimeout(() => broadcastRoom(code), 1500);
   });
@@ -441,9 +472,7 @@ io.on('connection', (socket) => {
         // For doble/robo/bomba — pick a random question from any normal category
         const normalCats = ['sports','geo','culture','history','eu','kenya'];
         const randCat = normalCats[Math.floor(Math.random() * normalCats.length)];
-        const td = getTenantData(room.tenantId);
-        const pool = td.questions[randCat] || [];
-        room.currentQuestion = pool[Math.floor(Math.random() * pool.length)] || null;
+        room.currentQuestion = getUniqueQuestion(room, randCat, null);
         room.currentDifficulty = 'medium';
         room.state = 'question';
         broadcastRoom(code);
@@ -458,12 +487,8 @@ io.on('connection', (socket) => {
       room.currentDifficulty = diff;
       room.specialEffect = null;
 
-      const td = getTenantData(room.tenantId);
-      const pool = (td.questions[categoryId] || []).filter(q => q.diff === diffLabel);
-      const fallback = td.questions[categoryId] || [];
-      room.currentQuestion = pool.length
-        ? pool[Math.floor(Math.random() * pool.length)]
-        : fallback[Math.floor(Math.random() * fallback.length)] || null;
+      const diffMap2 = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
+      room.currentQuestion = getUniqueQuestion(room, categoryId, diffMap2[diff] || 'medio');
 
       room.state = 'question';
       broadcastRoom(code);
