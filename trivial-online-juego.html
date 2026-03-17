@@ -1386,7 +1386,7 @@ function showQuestion(room) {
 
   setCategoryBg(room.currentCategory);
 
-  document.getElementById('q-counter').textContent = `P ${(room.questionIdx||0)+1}/10`;
+  document.getElementById('q-counter').textContent = `P ${(room.questionIdx||0)+1}/${room.totalRounds||10}`;
   document.getElementById('q-cat').textContent = cat ? cat.name : '—';
   document.getElementById('q-text').textContent = q ? q.q : '—';
 
@@ -1492,7 +1492,7 @@ function showScoreboard(room) {
   const q       = room.currentQuestion;
   const cp      = room.players[room.currentPlayerIdx];
   const qIdx    = room.questionIdx || 0;
-  const total   = 10;
+  const total = room.totalRounds || 10;
   const remaining = total - qIdx - 1;
 
   document.getElementById('sb-round').textContent = `Ronda ${qIdx + 1}`;
