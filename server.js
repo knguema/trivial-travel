@@ -533,10 +533,8 @@ io.on('connection', (socket) => {
         room.currentQuestion = getUniqueQuestion(room, randCat, null);
         room.currentDifficulty = 'medium';
 
-        setTimeout(() => {
-          room.state = 'question';
-          broadcastRoom(code);
-        }, 4500);
+        // Small delay so spectators can finish reveal animation
+        setTimeout(() => { room.state = 'question'; broadcastRoom(code); }, 500);
         return;
       }
 
@@ -551,11 +549,8 @@ io.on('connection', (socket) => {
       const diffMap2 = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
       room.currentQuestion = getUniqueQuestion(room, categoryId, diffMap2[diff] || 'medio');
 
-      // Wait for spin + reveal animation then show question
-      setTimeout(() => {
-        room.state = 'question';
-        broadcastRoom(code);
-      }, 4500);
+      // Small delay so spectators can finish reveal animation
+      setTimeout(() => { room.state = 'question'; broadcastRoom(code); }, 500);
     } catch(e) {
       console.error('game:spinResult error:', e.message);
     }
