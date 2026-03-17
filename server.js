@@ -453,18 +453,10 @@ io.on('connection', (socket) => {
 
     if (room.questionIdx >= (room.totalRounds || 10)) {
       room.state = 'finished';
-      // Track stats for ALL players
       const sorted = [...room.players].sort((a, b) => b.score - a.score);
       sorted.forEach((player, idx) => {
-        const userEntry = Object.entries(users).find(([, u]) => u.name === player.name);
-        if (userEntry) {
-          const u = users[userEntry[0]];
-          u.totalPoints = (u.totalPoints || 0) + player.score;
-          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
-          if (idx === 0) u.wins = (u.wins || 0) + 1;
-        }
+        updateUserStats(player.name, player.score, idx === 0);
       });
-      saveUsers(users);
       broadcastRoom(code);
       return;
     }
@@ -522,86 +514,116 @@ io.on('connection', (socket) => {
   });
 });
 
-const fs   = require('fs');
+const mysql = require('mysql2/promise');
 
-// ─── Users persistence ────────────────────────────────────────────────────────
-const USERS_FILE = path.join(__dirname, 'users.json');
+// ─── MySQL connection pool ────────────────────────────────────────────────────
+let db;
 
-function loadUsers() {
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    }
-  } catch(e) {}
-  return { 'admin': { password: 'admin1234', role: 'admin', name: 'Admin' } };
+async function initDB() {
+  const url = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
+  if (url) {
+    db = await mysql.createPool(url + '?ssl={"rejectUnauthorized":false}');
+  } else {
+    db = await mysql.createPool({
+      host:     process.env.MYSQL_HOST     || process.env.MYSQLHOST,
+      port:     process.env.MYSQL_PORT     || process.env.MYSQLPORT     || 3306,
+      user:     process.env.MYSQL_USER     || process.env.MYSQLUSER     || 'root',
+      password: process.env.MYSQL_PASSWORD || process.env.MYSQL_ROOT_PASSWORD,
+      database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'railway',
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+
+  // Create users table if not exists
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      role VARCHAR(20) DEFAULT 'player',
+      wins INT DEFAULT 0,
+      total_points INT DEFAULT 0,
+      games_played INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Insert admin if not exists
+  await db.execute(`
+    INSERT IGNORE INTO users (email, name, password, role)
+    VALUES ('admin', 'Admin', 'admin1234', 'admin')
+  `);
+
+  console.log('✅ MySQL connected and tables ready');
 }
 
-function saveUsers(u) {
-  try { fs.writeFileSync(USERS_FILE, JSON.stringify(u, null, 2)); } catch(e) {}
-}
-
-const users = loadUsers();
+initDB().catch(e => console.error('❌ MySQL error:', e.message));
 
 // ─── REST: Auth endpoints ─────────────────────────────────────────────────────
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) return res.json({ ok: false, msg: 'Faltan campos' });
-  if (users[email]) return res.json({ ok: false, msg: 'Este correo ya está registrado' });
-  users[email] = { password, role: 'player', name };
-  saveUsers(users);
-  console.log('✅ New user registered:', email, name);
-  res.json({ ok: true, name, role: 'player' });
+  try {
+    await db.execute(
+      'INSERT INTO users (email, name, password, role) VALUES (?, ?, ?, ?)',
+      [email, name, password, 'player']
+    );
+    console.log('✅ Registered:', email);
+    res.json({ ok: true, name, role: 'player' });
+  } catch(e) {
+    if (e.code === 'ER_DUP_ENTRY') return res.json({ ok: false, msg: 'Este correo ya está registrado' });
+    res.json({ ok: false, msg: 'Error al registrar' });
+  }
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.json({ ok: false, msg: 'Faltan campos' });
-  const user = users[email];
-  if (!user) return res.json({ ok: false, msg: 'Usuario no encontrado' });
-  if (user.password !== password) return res.json({ ok: false, msg: 'Contraseña incorrecta' });
-  console.log('✅ Login:', email, 'role:', user.role);
-  res.json({ ok: true, name: user.name, role: user.role });
+  try {
+    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.json({ ok: false, msg: 'Usuario no encontrado' });
+    const user = rows[0];
+    if (user.password !== password) return res.json({ ok: false, msg: 'Contraseña incorrecta' });
+    console.log('✅ Login:', email, user.role);
+    res.json({ ok: true, name: user.name, role: user.role });
+  } catch(e) {
+    res.json({ ok: false, msg: 'Error al iniciar sesión' });
+  }
 });
 
-app.get('/api/users', (req, res) => {
-  // Only return non-sensitive data
-  const list = Object.entries(users)
-    .filter(([k]) => k !== 'admin')
-    .map(([email, u]) => ({ email, name: u.name, role: u.role }));
-  res.json(list);
+app.get('/api/users', async (req, res) => {
+  try {
+    const [rows] = await db.execute("SELECT email, name, role FROM users WHERE role != 'admin'");
+    res.json(rows);
+  } catch(e) { res.json([]); }
 });
 
-app.get('/api/ranking', (req, res) => {
-  const ranking = Object.entries(users)
-    .filter(([email]) => email !== 'admin')
-    .map(([email, u]) => ({
-      name: u.name,
-      wins: u.wins || 0,
-      totalPoints: u.totalPoints || 0,
-      gamesPlayed: u.gamesPlayed || 0,
-    }))
-    .sort((a, b) => b.wins - a.wins || b.totalPoints - a.totalPoints);
-  res.json(ranking);
+app.get('/api/ranking', async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      "SELECT name, wins, total_points as totalPoints, games_played as gamesPlayed FROM users WHERE role != 'admin' ORDER BY wins DESC, total_points DESC"
+    );
+    res.json(rows);
+  } catch(e) { res.json([]); }
 });
 
-app.get('/api/ranking', (req, res) => {
-  const ranking = Object.entries(users)
-    .filter(([email, u]) => u.role !== 'admin' && u.name)
-    .map(([email, u]) => ({
-      name: u.name,
-      wins: u.wins || 0,
-      totalPoints: u.totalPoints || 0,
-      gamesPlayed: u.gamesPlayed || 0,
-    }))
-    .sort((a, b) => b.wins !== a.wins ? b.wins - a.wins : b.totalPoints - a.totalPoints);
-  res.json(ranking);
+app.get('/api/wins/:name', async (req, res) => {
+  try {
+    const [rows] = await db.execute('SELECT wins FROM users WHERE name = ?', [req.params.name]);
+    res.json({ wins: rows[0] ? rows[0].wins : 0 });
+  } catch(e) { res.json({ wins: 0 }); }
 });
 
-app.get('/api/wins/:name', (req, res) => {
-  const userEntry = Object.entries(users).find(([, u]) => u.name === req.params.name);
-  const wins = userEntry ? (userEntry[1].wins || 0) : 0;
-  res.json({ wins });
-});
+// ─── Update stats after game ──────────────────────────────────────────────────
+async function updateUserStats(playerName, points, isWinner) {
+  try {
+    await db.execute(
+      'UPDATE users SET total_points = total_points + ?, games_played = games_played + 1, wins = wins + ? WHERE name = ?',
+      [points, isWinner ? 1 : 0, playerName]
+    );
+  } catch(e) { console.error('Stats update error:', e.message); }
+}
 
 app.get('/api/tenant/:id', (req, res) => {
   res.json(getTenantData(req.params.id));
