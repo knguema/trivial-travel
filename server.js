@@ -455,6 +455,12 @@ io.on('connection', (socket) => {
 
       console.log('🎡 spinResult:', categoryId, difficulty, special);
 
+      // Guard against null categoryId
+      if (!categoryId) {
+        console.error('❌ spinResult: categoryId is null, ignoring');
+        return;
+      }
+
       // Handle special sectors
       if (special) {
         room.currentCategory = categoryId;
