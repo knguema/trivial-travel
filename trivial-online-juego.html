@@ -1116,6 +1116,18 @@ function connectSocket() {
     socket.emit('room:rejoin', { code: ROOM_CODE, playerName: MY_NAME });
   });
 
+  socket.on('error', ({ msg }) => {
+    console.log('❌ Error:', msg);
+    if (msg === 'Sala no encontrada') {
+      // Room lost — redirect to lobby
+      setTimeout(() => {
+        window.location.href = 'trivial-lobby.html';
+      }, 1500);
+      document.getElementById('wait-title').textContent = 'Sala perdida';
+      document.getElementById('wait-sub').textContent = 'El servidor se reinició. Volviendo al lobby...';
+    }
+  });
+
   socket.on('room:update', (room) => {
     console.log('📡 room:update recibido, estado:', room.state, 'jugadores:', room.players.length);
     roomState = room;
@@ -1130,8 +1142,16 @@ function connectSocket() {
     startSpectatorSpin();
   });
 
-  socket.on('connect_error', (err) => {
-    console.log('❌ Error conexión:', err.message);
+  socket.on('error', (data) => {
+    console.log('❌ Server error:', data.msg);
+    if (data.msg && data.msg.includes('Sala no encontrada')) {
+      // Room doesn't exist — go back to lobby
+      setTimeout(() => {
+        window.location.href = 'trivial-lobby.html';
+      }, 1500);
+      document.getElementById('wait-title').textContent = 'Sala no encontrada';
+      document.getElementById('wait-sub').textContent = 'Volviendo al lobby...';
+    }
   });
 
   socket.on('disconnect', (reason) => {
@@ -1235,6 +1255,8 @@ function startSpectatorSpin() {
   }
   requestAnimationFrame(frame);
 }
+
+function animateSpinForSpectator(catId) {
   if (isSpinning) return;
   isSpinning = true;
 
