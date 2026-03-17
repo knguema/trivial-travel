@@ -452,16 +452,18 @@ io.on('connection', (socket) => {
 
     if (room.questionIdx >= 10) {
       room.state = 'finished';
-      // Track win for winner
-      const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
-      if (winner) {
-        // Find user by name and increment wins
-        const userEntry = Object.entries(users).find(([, u]) => u.name === winner.name);
+      // Track stats for ALL players
+      const sorted = [...room.players].sort((a, b) => b.score - a.score);
+      sorted.forEach((player, idx) => {
+        const userEntry = Object.entries(users).find(([, u]) => u.name === player.name);
         if (userEntry) {
-          users[userEntry[0]].wins = (users[userEntry[0]].wins || 0) + 1;
-          saveUsers(users);
+          const u = users[userEntry[0]];
+          u.totalPoints = (u.totalPoints || 0) + player.score;
+          u.gamesPlayed = (u.gamesPlayed || 0) + 1;
+          if (idx === 0) u.wins = (u.wins || 0) + 1;
         }
-      }
+      });
+      saveUsers(users);
       broadcastRoom(code);
       return;
     }
@@ -566,6 +568,32 @@ app.get('/api/users', (req, res) => {
     .filter(([k]) => k !== 'admin')
     .map(([email, u]) => ({ email, name: u.name, role: u.role }));
   res.json(list);
+});
+
+app.get('/api/ranking', (req, res) => {
+  const ranking = Object.entries(users)
+    .filter(([email]) => email !== 'admin')
+    .map(([email, u]) => ({
+      name: u.name,
+      wins: u.wins || 0,
+      totalPoints: u.totalPoints || 0,
+      gamesPlayed: u.gamesPlayed || 0,
+    }))
+    .sort((a, b) => b.wins - a.wins || b.totalPoints - a.totalPoints);
+  res.json(ranking);
+});
+
+app.get('/api/ranking', (req, res) => {
+  const ranking = Object.entries(users)
+    .filter(([email, u]) => u.role !== 'admin' && u.name)
+    .map(([email, u]) => ({
+      name: u.name,
+      wins: u.wins || 0,
+      totalPoints: u.totalPoints || 0,
+      gamesPlayed: u.gamesPlayed || 0,
+    }))
+    .sort((a, b) => b.wins !== a.wins ? b.wins - a.wins : b.totalPoints - a.totalPoints);
+  res.json(ranking);
 });
 
 app.get('/api/wins/:name', (req, res) => {
