@@ -1284,8 +1284,8 @@ function revealCategory(cat, room) {
   }
 
   // Normal category
-  const qIdx = room ? (room.questionIdx || 0) : 0;
-  const diff = qIdx < 4 ? 'easy' : qIdx < 7 ? 'medium' : 'hard';
+  const qIdx = room ? (room.currentRound || 1) : 1;
+  const diff = qIdx <= 2 ? 'easy' : qIdx <= 4 ? 'medium' : 'hard';
   const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff];
   const diffColor = { easy:'#18c25a', medium:'#f5a623', hard:'#e84545' }[diff];
 
@@ -1423,7 +1423,7 @@ function showQuestion(room) {
 
   setCategoryBg(room.currentCategory);
 
-  document.getElementById('q-counter').textContent = `Ronda ${(room.questionIdx||0)+1}/${room.totalRounds||10}`;
+  document.getElementById('q-counter').textContent = `Ronda ${room.currentRound||1} / ${room.totalRounds||6}`;
   
   // Show special effect badge
   const catName = cat ? cat.name : '—';
@@ -1544,12 +1544,13 @@ function showScoreboard(room) {
   const q       = room.currentQuestion;
   const cp      = room.players[room.currentPlayerIdx];
   const qIdx    = room.questionIdx || 0;
-  const total = room.totalRounds || 10;
-  const remaining = total - qIdx - 1;
+  const currentRound = room.currentRound || 1;
+  const totalRounds  = room.totalRounds || 6;
+  const remaining    = totalRounds - currentRound;
 
-  document.getElementById('sb-round').textContent = `Ronda ${qIdx + 1}`;
+  document.getElementById('sb-round').textContent = `Ronda ${currentRound} de ${totalRounds}`;
   document.getElementById('sb-sub').textContent   = remaining > 0
-    ? `${remaining} pregunta${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''}`
+    ? `Quedan ${remaining} ronda${remaining !== 1 ? 's' : ''}`
     : 'Última ronda';
 
   // Show last answer banner
