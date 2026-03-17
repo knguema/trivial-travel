@@ -1353,7 +1353,6 @@ function revealCategory(cat, room) {
       socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
       reveal.classList.remove('show');
     }, 2200);
-    return;
   }
 
   // Normal category
@@ -1378,9 +1377,9 @@ function revealCategory(cat, room) {
 
   reveal.classList.add('show');
   Audio.categoryReveal();
-  console.log('🎡 Categoria seleccionada:', selectedCatId, 'dificultad:', diff);
+  console.log('🎡 Categoria seleccionada:', cat.id, 'dificultad:', diff);
   setTimeout(() => {
-    socket.emit('game:spinResult', { categoryId: selectedCatId, difficulty: diff });
+    socket.emit('game:spinResult', { categoryId: cat.id, difficulty: diff });
     reveal.classList.remove('show');
   }, 1800);
 }
