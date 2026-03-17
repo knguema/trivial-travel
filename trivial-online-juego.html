@@ -823,7 +823,7 @@ html, body {
         <span class="fb-title" id="fb-title">Correcto</span>
         <span id="fb-detail"></span>
       </div>
-      <button class="btn-next" id="btn-next" onclick="nextTurn()">Siguiente →</button>
+      <button class="btn-next" id="btn-next" onclick="proceedNextTurn()">Siguiente →</button>
     </div>
     <div class="q-waiting" id="q-waiting">
       <div class="dots"><span></span><span></span><span></span></div>
@@ -1536,6 +1536,34 @@ function renderMiniScores(room) {
       <span class="mini-score-pts">${p.score}</span>
     </div>
   `).join('');
+}
+
+// ── NAV ──────────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+}
+
+function playAgain() { window.location.href = 'trivial-lobby.html'; }
+function goHome()    { window.location.href = 'trivial-modos.html'; }
+
+// ── MUTE ──────────────────────────────────────────────────────────────────────
+let muted = false;
+function toggleMute() {
+  muted = !muted;
+  const btn = document.getElementById('mute-btn');
+  if (btn) btn.classList.toggle('muted', muted);
+  const onEl  = document.getElementById('mute-icon-on');
+  const offEl = document.getElementById('mute-icon-off');
+  if (onEl)  onEl.style.display  = muted ? 'none'  : 'block';
+  if (offEl) offEl.style.display = muted ? 'block' : 'none';
+  Object.keys(Audio).forEach(k => {
+    if (typeof Audio[k] === 'function') {
+      if (muted) { Audio['_' + k] = Audio[k]; Audio[k] = () => {}; }
+      else if (Audio['_' + k]) { Audio[k] = Audio['_' + k]; }
+    }
+  });
 }
 
 // ── CONNECT ───────────────────────────────────────────────────────────────────
