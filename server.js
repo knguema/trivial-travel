@@ -514,7 +514,8 @@ io.on('connection', (socket) => {
       const currentPlayer = room.players[room.currentPlayerIdx];
       if (!currentPlayer || currentPlayer.id !== socket.id) return;
 
-      const correct = answer === room.currentQuestion.a;
+      const correct = answer.trim() === room.currentQuestion.a.trim();
+      console.log('📝 Answer:', JSON.stringify(answer), '| Correct:', JSON.stringify(room.currentQuestion.a), '| Match:', correct);
       if (correct) {
         const diffPts = { easy: 3, medium: 6, hard: 12 };
         let points = diffPts[room.currentDifficulty] || 6;
