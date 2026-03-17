@@ -907,6 +907,7 @@ const TIME_LIMIT = 15;
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let socket, roomState, myPlayer;
 let isSpinning = false;
+let spinAngle  = 0;
 let timerInterval;
 let sbCountdownInterval = null;
 
@@ -1061,9 +1062,6 @@ const Audio = (() => {
     },
   };
 })();
-
-let spinAngle = 0;
-let isSpinning = false;
 
 function showSpin(room) {
   showScreen('spin');
