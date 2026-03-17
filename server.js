@@ -390,7 +390,7 @@ io.on('connection', (socket) => {
   });
 
   // Spin wheel result
-  socket.on('game:spinResult', ({ categoryId, difficulty }) => {
+  socket.on('game:spinResult', ({ categoryId, difficulty, special }) => {
     try {
       const code = socket.data.roomCode;
       const room = rooms[code];
@@ -398,13 +398,41 @@ io.on('connection', (socket) => {
       const currentPlayer = room.players[room.currentPlayerIdx];
       if (!currentPlayer || currentPlayer.id !== socket.id) return;
 
-      console.log('🎡 spinResult:', categoryId, difficulty);
+      console.log('🎡 spinResult:', categoryId, difficulty, special);
+
+      // Handle special sectors
+      if (special) {
+        room.currentCategory = categoryId;
+        room.specialEffect = special;
+
+        if (special === 'skip') {
+          // Skip turn — go straight to answer/scoreboard
+          room.state = 'answer';
+          room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer: '__skip__', correct: false, special: 'skip' };
+          room.allAnswers = [];
+          broadcastRoom(code);
+          return;
+        }
+
+        // For doble/robo/bomba — pick a random question from any normal category
+        const normalCats = ['sports','geo','culture','history','eu','kenya'];
+        const randCat = normalCats[Math.floor(Math.random() * normalCats.length)];
+        const td = getTenantData(room.tenantId);
+        const pool = td.questions[randCat] || [];
+        room.currentQuestion = pool[Math.floor(Math.random() * pool.length)] || null;
+        room.currentDifficulty = 'medium';
+        room.state = 'question';
+        broadcastRoom(code);
+        return;
+      }
+
       const diff = difficulty || 'medium';
       const diffMap = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
       const diffLabel = diffMap[diff] || 'medio';
 
       room.currentCategory = categoryId;
       room.currentDifficulty = diff;
+      room.specialEffect = null;
 
       const td = getTenantData(room.tenantId);
       const pool = (td.questions[categoryId] || []).filter(q => q.diff === diffLabel);
@@ -434,9 +462,31 @@ io.on('connection', (socket) => {
       const correct = answer === room.currentQuestion.a;
       if (correct) {
         const diffPts = { easy: 3, medium: 6, hard: 12 };
-        const points = diffPts[room.currentDifficulty] || 6;
+        let points = diffPts[room.currentDifficulty] || 6;
+
+        // Apply special effects
+        if (room.specialEffect === 'doble') points *= 2;
+
         room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
         currentPlayer.score = room.scores[socket.id];
+      } else {
+        // Failed answer effects
+        if (room.specialEffect === 'bomba') {
+          const diffPts = { easy: 3, medium: 6, hard: 12 };
+          const penalty = diffPts[room.currentDifficulty] || 6;
+          room.scores[socket.id] = Math.max(0, (room.scores[socket.id] || 0) - penalty);
+          currentPlayer.score = room.scores[socket.id];
+        } else if (room.specialEffect === 'robo') {
+          // Give points to next player
+          const nextIdx = (room.currentPlayerIdx + 1) % room.players.length;
+          const nextPlayer = room.players[nextIdx];
+          if (nextPlayer) {
+            const diffPts = { easy: 3, medium: 6, hard: 12 };
+            const pts = diffPts[room.currentDifficulty] || 6;
+            room.scores[nextPlayer.id] = (room.scores[nextPlayer.id] || 0) + pts;
+            nextPlayer.score = room.scores[nextPlayer.id];
+          }
+        }
       }
 
       room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer, correct };
@@ -476,6 +526,7 @@ io.on('connection', (socket) => {
     room.lastAnswer = null;
     room.answers = {};
     room.allAnswers = [];
+    room.specialEffect = null;
     broadcastRoom(code);
   });
 
