@@ -1136,10 +1136,20 @@ function connectSocket() {
     handleRoomUpdate(room);
   });
 
-  // Spectator animation — fires when current player clicks spin
-  socket.on('game:spinStarted', () => {
-    if (isSpinning) return;
-    startSpectatorSpin();
+  // Category result — show reveal animation to ALL players
+  socket.on('game:categoryResult', ({ categoryId, difficulty, special }) => {
+    const cat = categories.find(c => c.id === categoryId);
+    if (!cat) return;
+
+    // Animate spin to this category for everyone not already spinning
+    if (!isSpinning) {
+      animateSpinToCategory(categoryId, () => {
+        revealCategoryForAll(cat, difficulty, special);
+      });
+    } else {
+      // Already spinning (it's my turn) — just show reveal when done
+      // The revealCategory call in spinWheel handles this
+    }
   });
 
   socket.on('error', (data) => {
@@ -1251,9 +1261,97 @@ function startSpectatorSpin() {
     stopSpinTicks();
     isSpinning = false;
     spinAngle = spinAngle % (Math.PI * 2);
-    // When finished — show whatever category the server sent (via room:update → showQuestion)
   }
   requestAnimationFrame(frame);
+}
+
+function animateSpinToCategory(catId, onDone) {
+  // Animate wheel so pointer lands on the given category
+  const n = categories.length;
+  const catIdx = categories.findIndex(c => c.id === catId);
+  if (catIdx < 0) { if(onDone) onDone(); return; }
+
+  const slice = (2 * Math.PI) / n;
+  // We want the pointer (at left = π) to point to center of slice catIdx
+  // Slice catIdx center in wheel space = catIdx * slice + slice/2
+  // In screen space: sliceCenter = spinAngle - π/2 + catIdx*slice + slice/2
+  // Pointer is at π, so we need: spinAngle - π/2 + catIdx*slice + slice/2 = π (mod 2π)
+  // => spinAngle = π + π/2 - catIdx*slice - slice/2 = 3π/2 - catIdx*slice - slice/2
+  const targetAngle = (3 * Math.PI / 2) - catIdx * slice - slice / 2;
+  const extra = 5 + Math.random() * 3; // extra full rotations
+  const target = spinAngle + extra * Math.PI * 2 + ((targetAngle - spinAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+
+  const dur = 4200;
+  const start = performance.now();
+  const startAng = spinAngle;
+  const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+  if (!isSpinning) {
+    isSpinning = true;
+    startSpinTicks();
+  }
+
+  function frame(now) {
+    const p = Math.min((now - start) / dur, 1);
+    spinAngle = startAng + (target - startAng) * ease(p);
+    drawWheel(categories, spinAngle);
+    if (p > 0.6) slowSpinTicks((p - 0.6) / 0.4);
+    if (p < 1) { requestAnimationFrame(frame); return; }
+    stopSpinTicks();
+    isSpinning = false;
+    spinAngle = spinAngle % (Math.PI * 2);
+    drawWheel(categories, spinAngle, catId);
+    if (onDone) onDone();
+  }
+  requestAnimationFrame(frame);
+}
+
+function revealCategoryForAll(cat, diff, special) {
+  flashSlice(cat);
+  const reveal = document.getElementById('cat-reveal');
+  reveal.style.background = hexToRgba(cat.color, 0.15);
+  reveal.style.borderColor = hexToRgba(cat.color, 0.6);
+  reveal.style.color = cat.color;
+
+  if (special) {
+    const specialDesc = {
+      doble: 'La próxima pregunta vale el DOBLE',
+      robo:  'Si fallas, los puntos van al siguiente',
+      bomba: 'Si fallas, PIERDES puntos',
+      skip:  'Turno perdido',
+    };
+    document.getElementById('cat-reveal-name').textContent = `${cat.emoji} ${cat.name}`;
+    let badge = document.getElementById('cat-diff-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'cat-diff-badge';
+      badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;`;
+      document.getElementById('cat-reveal').appendChild(badge);
+    }
+    badge.textContent = specialDesc[special] || '';
+    badge.style.display = 'block';
+    badge.style.background = hexToRgba(cat.color, 0.2);
+    badge.style.color = cat.color;
+  } else {
+    const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff] || '';
+    const diffColor = { easy:'#18c25a', medium:'#f5a623', hard:'#e84545' }[diff] || '#fff';
+    document.getElementById('cat-reveal-name').textContent = cat.name.toUpperCase();
+    let badge = document.getElementById('cat-diff-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'cat-diff-badge';
+      badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;`;
+      document.getElementById('cat-reveal').appendChild(badge);
+    }
+    badge.textContent = diffLabel;
+    badge.style.display = 'block';
+    badge.style.background = hexToRgba(diffColor, 0.2);
+    badge.style.color = diffColor;
+  }
+
+  reveal.classList.add('show');
+  Audio.categoryReveal();
+  setTimeout(() => reveal.classList.remove('show'), 1800);
 }
 
 function animateSpinForSpectator(catId) {
@@ -1381,71 +1479,15 @@ function spinWheel() {
 }
 
 function revealCategory(cat, room) {
-  flashSlice(cat);
-
-  const reveal = document.getElementById('cat-reveal');
-  reveal.style.background = hexToRgba(cat.color, 0.15);
-  reveal.style.borderColor = hexToRgba(cat.color, 0.6);
-  reveal.style.color = cat.color;
-
-  // Special sectors
+  // Current player: just send spinResult to server
+  // Server broadcasts game:categoryResult to ALL → triggers animateSpinToCategory + revealCategoryForAll
   if (cat.special) {
-    const specialDesc = {
-      doble: 'La próxima pregunta vale el DOBLE de puntos',
-      robo:  'Si fallas, tus puntos van al siguiente jugador',
-      bomba: 'Si fallas, PIERDES puntos',
-      skip:  'Pierdes tu turno, ¡suerte la próxima!'
-    };
-    document.getElementById('cat-reveal-name').textContent = `${cat.emoji} ${cat.name}`;
-
-    let badge = document.getElementById('cat-diff-badge');
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.id = 'cat-diff-badge';
-      badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;text-align:center;`;
-      document.getElementById('cat-reveal').appendChild(badge);
-    }
-    badge.textContent = specialDesc[cat.id] || '';
-    badge.style.background = hexToRgba(cat.color, 0.2);
-    badge.style.color = cat.color;
-
-    reveal.classList.add('show');
-    Audio.categoryReveal();
-
-    // Send special to server and auto-proceed
-    setTimeout(() => {
-      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
-      reveal.classList.remove('show');
-    }, 2200);
-  }
-
-  // Normal category
-  const qIdx = room ? (room.currentRound || 1) : 1;
-  const diffs = ['easy', 'medium', 'hard'];
-  const diff = diffs[Math.floor(Math.random() * diffs.length)];
-  const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff];
-  const diffColor = { easy:'#18c25a', medium:'#f5a623', hard:'#e84545' }[diff];
-
-  document.getElementById('cat-reveal-name').textContent = cat.name.toUpperCase();
-
-  let badge = document.getElementById('cat-diff-badge');
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.id = 'cat-diff-badge';
-    badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;`;
-    document.getElementById('cat-reveal').appendChild(badge);
-  }
-  badge.textContent = diffLabel;
-  badge.style.background = hexToRgba(diffColor, 0.2);
-  badge.style.color = diffColor;
-
-  reveal.classList.add('show');
-  Audio.categoryReveal();
-  console.log('🎡 Categoria seleccionada:', cat.id, 'dificultad:', diff);
-  setTimeout(() => {
+    socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
+  } else {
+    const diffs = ['easy', 'medium', 'hard'];
+    const diff = diffs[Math.floor(Math.random() * diffs.length)];
     socket.emit('game:spinResult', { categoryId: cat.id, difficulty: diff });
-    reveal.classList.remove('show');
-  }, 1800);
+  }
 }
 
 function flashSlice(cat) {
