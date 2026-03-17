@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivial — Ranking Global</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root { --blue:#2d7dd2; --gold:#f5c842; --silver:#b0bec5; --bronze:#cd7f32; }
+html,body { min-height:100%; font-family:'Barlow',sans-serif; background:#0a0e1a; color:#e8eaf6; }
+
+.btn-back { position:fixed; top:24px; left:24px; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1); border-radius:4px; padding:10px 18px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.5); cursor:pointer; text-decoration:none; transition:all .15s; z-index:10; }
+.btn-back:hover { border-color:var(--blue); color:var(--blue); }
+.btn-back svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.page { min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:80px 24px 48px; }
+
+.header { text-align:center; margin-bottom:40px; }
+.header-label { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--blue); margin-bottom:10px; display:block; }
+.header h1 { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:clamp(36px,8vw,64px); text-transform:uppercase; letter-spacing:-1px; line-height:1; color:#fff; margin-bottom:8px; }
+.header p { font-size:14px; color:rgba(255,255,255,0.4); }
+
+/* PODIUM */
+.podium { display:flex; align-items:flex-end; justify-content:center; gap:12px; margin-bottom:40px; width:100%; max-width:480px; }
+.podium-slot { display:flex; flex-direction:column; align-items:center; gap:8px; flex:1; }
+.podium-avatar { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:22px; color:#0a0e1a; border:3px solid; position:relative; }
+.podium-crown { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:18px; }
+.podium-name { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:13px; text-transform:uppercase; color:#fff; text-align:center; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.podium-wins { font-size:11px; color:rgba(255,255,255,0.4); }
+.podium-block { width:100%; border-radius:4px 4px 0 0; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:26px; color:rgba(0,0,0,0.25); }
+
+/* TABLE */
+.ranking-wrap { width:100%; max-width:620px; }
+.table-header { display:grid; grid-template-columns:48px 1fr 80px 80px 70px; padding:8px 16px 12px; gap:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.25); }
+.ranking-row { display:grid; grid-template-columns:48px 1fr 80px 80px 70px; align-items:center; gap:8px; padding:14px 16px; border-radius:4px; margin-bottom:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); transition:background .15s; animation:rowIn .35s cubic-bezier(0.16,1,0.3,1) both; }
+.ranking-row:hover { background:rgba(255,255,255,0.07); }
+.ranking-row.is-me { background:rgba(45,125,210,0.1); border-color:rgba(45,125,210,0.3); }
+@keyframes rowIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+
+.rank-pos { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:17px; color:rgba(255,255,255,0.2); text-align:center; }
+.rank-pos.top { color:var(--gold); }
+.rank-player { display:flex; align-items:center; gap:10px; overflow:hidden; }
+.rank-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:14px; color:#0a0e1a; flex-shrink:0; }
+.rank-name { font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rank-me { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--blue); background:rgba(45,125,210,0.15); padding:2px 7px; border-radius:2px; margin-left:4px; flex-shrink:0; }
+.rank-stat { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:16px; text-align:center; }
+.rank-wins { color:var(--gold); }
+.rank-pts  { color:var(--blue); }
+.rank-games{ color:rgba(255,255,255,0.3); font-size:13px; }
+
+.my-banner { width:100%; max-width:620px; background:rgba(45,125,210,0.1); border:1px solid rgba(45,125,210,0.3); border-radius:4px; padding:14px 20px; margin-bottom:16px; display:none; align-items:center; gap:10px; font-size:14px; color:rgba(255,255,255,0.5); }
+.my-banner.show { display:flex; }
+.my-banner strong { color:var(--blue); font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:20px; }
+
+.empty { text-align:center; padding:48px 24px; color:rgba(255,255,255,0.3); font-size:15px; line-height:1.6; }
+.loading { display:flex; flex-direction:column; align-items:center; gap:16px; padding:48px; color:rgba(255,255,255,0.3); font-size:14px; }
+.dots span { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--blue); margin:0 3px; animation:dp 1.2s ease-in-out infinite; }
+.dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+@keyframes dp { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+@media(max-width:480px){
+  .table-header,.ranking-row{grid-template-columns:36px 1fr 60px 60px 50px}
+  .rank-stat{font-size:13px}
+  .podium-avatar{width:42px;height:42px;font-size:17px}
+}
+</style>
+</head>
+<body>
+
+<a class="btn-back" href="trivial-modos.html">
+  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  Volver
+</a>
+
+<div class="page">
+
+  <div class="header">
+    <span class="header-label">Trivial Travel</span>
+    <h1>🏆 Ranking<br>Global</h1>
+    <p>Los mejores jugadores de todas las salas</p>
+  </div>
+
+  <div class="podium" id="podium" style="display:none"></div>
+
+  <div class="my-banner" id="my-banner">
+    Tu posición en el ranking: <strong id="my-pos">—</strong>
+  </div>
+
+  <div class="ranking-wrap">
+    <div class="table-header">
+      <span style="text-align:center">#</span>
+      <span>Jugador</span>
+      <span style="text-align:center">🏆 Wins</span>
+      <span style="text-align:center">⚡ Pts</span>
+      <span style="text-align:center">🎮</span>
+    </div>
+    <div id="ranking-list">
+      <div class="loading">
+        <div class="dots"><span></span><span></span><span></span></div>
+        Cargando ranking...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SERVER   = window.location.origin;
+const MY_NAME  = sessionStorage.getItem('player_name') || '';
+const COLORS   = ['#2d7dd2','#e84545','#f5a623','#18c25a','#a259ff','#ff6b6b','#3B9EFF','#f5c842'];
+
+async function loadRanking() {
+  try {
+    const r = await fetch(`${SERVER}/api/ranking`);
+    const data = await r.json();
+    render(data);
+  } catch {
+    document.getElementById('ranking-list').innerHTML =
+      '<div class="empty">No se pudo cargar el ranking.<br>Comprueba la conexión.</div>';
+  }
+}
+
+function render(players) {
+  const list = document.getElementById('ranking-list');
+
+  if (!players.length) {
+    list.innerHTML = '<div class="empty">Aún no hay jugadores registrados.<br>¡Sé el primero en jugar y ganar!</div>';
+    return;
+  }
+
+  // Podium top 3
+  const top = players.slice(0, Math.min(3, players.length));
+  const podium = document.getElementById('podium');
+  podium.style.display = 'flex';
+
+  const tiers   = ['gold','silver','bronze'];
+  const heights = [110, 80, 60];
+  const crowns  = ['👑','',''];
+  const order   = top.length >= 3 ? [1,0,2] : top.length === 2 ? [1,0] : [0];
+
+  podium.innerHTML = order.map(i => {
+    const p = top[i];
+    if (!p) return '';
+    const col = COLORS[i % COLORS.length];
+    return `
+      <div class="podium-slot">
+        <div class="podium-avatar" style="background:${col};border-color:${col}">
+          ${crowns[i] ? `<span class="podium-crown">${crowns[i]}</span>` : ''}
+          ${p.name.charAt(0).toUpperCase()}
+        </div>
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-wins">${p.wins} victoria${p.wins!==1?'s':''}</div>
+        <div class="podium-block ${tiers[i]}" style="height:${heights[i]}px">${i+1}</div>
+      </div>`;
+  }).join('');
+
+  // My position banner
+  const myIdx = players.findIndex(p => p.name === MY_NAME);
+  if (myIdx >= 0) {
+    document.getElementById('my-pos').textContent = `#${myIdx+1}`;
+    document.getElementById('my-banner').classList.add('show');
+  }
+
+  // Full table
+  list.innerHTML = players.map((p, i) => {
+    const isMe = p.name === MY_NAME;
+    const col  = COLORS[i % COLORS.length];
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+    return `
+      <div class="ranking-row ${isMe?'is-me':''}" style="animation-delay:${i*0.04}s">
+        <div class="rank-pos ${i<3?'top':''}">${medal}</div>
+        <div class="rank-player">
+          <div class="rank-avatar" style="background:${col}">${p.name.charAt(0).toUpperCase()}</div>
+          <span class="rank-name">${p.name}</span>
+          ${isMe?'<span class="rank-me">Tú</span>':''}
+        </div>
+        <div class="rank-stat rank-wins">${p.wins}</div>
+        <div class="rank-stat rank-pts">${p.totalPoints}</div>
+        <div class="rank-stat rank-games">${p.gamesPlayed}</div>
+      </div>`;
+  }).join('');
+}
+
+loadRanking();
+</script>
+</body>
+</html>
