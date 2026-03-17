@@ -309,8 +309,10 @@ function broadcastRoom(code) {
     currentDifficulty: room.currentDifficulty,
     currentQuestion: room.currentQuestion,
     specialEffect: room.specialEffect || null,
+    currentRound: room.currentRound || 1,
+    totalRounds: room.totalRounds || 6,
+    turnInRound: room.turnInRound || 0,
     questionIdx: room.questionIdx || 0,
-    totalRounds: room.totalRounds || 10,
     lastAnswer: room.lastAnswer || null,
     allAnswers: room.allAnswers || [],
     winner: room.winner || null,
@@ -403,11 +405,11 @@ io.on('connection', (socket) => {
     if (!room || room.host !== socket.id) return;
     if (room.players.length < 1) return;
     room.state = 'spinning';
-    room.questionIdx = 0;
-    room.totalRounds = rounds || 10;
-    // Emit game:start so lobby redirects everyone
+    room.currentRound = 1;           // current round number
+    room.turnInRound  = 0;           // how many players have played in this round
+    room.totalRounds  = rounds || 6; // total rounds to play
+    room.currentPlayerIdx = 0;
     io.to(code).emit('game:start', { roomCode: code });
-    // After a short delay broadcast spinning state for when they reconnect
     setTimeout(() => broadcastRoom(code), 1500);
   });
 
@@ -529,19 +531,34 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (room.state !== 'answer') return;
 
-    room.questionIdx = (room.questionIdx || 0) + 1;
+    const numPlayers = room.players.length;
+    room.turnInRound = (room.turnInRound || 0) + 1;
 
-    if (room.questionIdx >= (room.totalRounds || 10)) {
-      room.state = 'finished';
-      const sorted = [...room.players].sort((a, b) => b.score - a.score);
-      sorted.forEach((player, idx) => {
-        updateUserStats(player.name, player.score, idx === 0);
-      });
-      broadcastRoom(code);
-      return;
+    // Check if all players have played this round
+    if (room.turnInRound >= numPlayers) {
+      // Round complete
+      room.currentRound = (room.currentRound || 1) + 1;
+      room.turnInRound  = 0;
+      room.currentPlayerIdx = 0; // start again from first player
+
+      // Check if all rounds done
+      if (room.currentRound > (room.totalRounds || 6)) {
+        room.state = 'finished';
+        const sorted = [...room.players].sort((a, b) => b.score - a.score);
+        sorted.forEach((player, idx) => {
+          updateUserStats(player.name, player.score, idx === 0);
+        });
+        broadcastRoom(code);
+        return;
+      }
+    } else {
+      // Next player in this round
+      room.currentPlayerIdx = (room.currentPlayerIdx + 1) % numPlayers;
     }
 
-    room.currentPlayerIdx = (room.currentPlayerIdx + 1) % room.players.length;
+    // Also track total questions for display
+    room.questionIdx = ((room.currentRound - 1) * numPlayers) + room.turnInRound;
+
     room.state = 'spinning';
     room.currentQuestion = null;
     room.currentCategory = null;
