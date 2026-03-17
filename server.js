@@ -464,15 +464,35 @@ io.on('connection', (socket) => {
   });
 
   // Spin wheel result
-  // Notify all players that spinning has started
+  // game:startSpin — server generates angle, calculates result, broadcasts to ALL
   socket.on('game:startSpin', () => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
     const currentPlayer = room.players[room.currentPlayerIdx];
     if (!currentPlayer || currentPlayer.id !== socket.id) return;
-    // Broadcast to everyone else that spin started
-    socket.to(code).emit('game:spinStarted');
+
+    const cats = room.categories || defaultCategories;
+    const n = cats.length;
+
+    // Pick random target slice
+    const randSlice = Math.floor(Math.random() * n);
+    const extra = 6 + Math.random() * 5;
+    const winningCat = cats[randSlice];
+
+    // Pick difficulty
+    const diffs = ['easy', 'medium', 'hard'];
+    const chosenDiff = winningCat.special ? 'special' : diffs[Math.floor(Math.random() * diffs.length)];
+
+    // Broadcast spin to ALL with winning category included
+    io.to(code).emit('game:doSpin', {
+      randSlice,
+      extra,
+      n,
+      catId: winningCat.id,
+      diff: chosenDiff,
+      special: winningCat.special ? winningCat.id : null,
+    });
   });
 
   socket.on('game:spinResult', ({ categoryId, difficulty, special }) => {
@@ -511,17 +531,10 @@ io.on('connection', (socket) => {
         room.currentQuestion = getUniqueQuestion(room, randCat, null);
         room.currentDifficulty = 'medium';
 
-        // Broadcast special result to all EXCEPT current player
-        socket.to(code).emit('game:categoryResult', {
-          categoryId,
-          difficulty: 'medium',
-          special: special,
-        });
-
         setTimeout(() => {
           room.state = 'question';
           broadcastRoom(code);
-        }, 2500);
+        }, 4500);
         return;
       }
 
@@ -536,18 +549,11 @@ io.on('connection', (socket) => {
       const diffMap2 = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
       room.currentQuestion = getUniqueQuestion(room, categoryId, diffMap2[diff] || 'medio');
 
-      // Broadcast category result to ALL EXCEPT the current player (who already saw it)
-      socket.to(code).emit('game:categoryResult', {
-        categoryId,
-        difficulty: diff,
-        special: null,
-      });
-
-      // Then after the reveal animation (2s), show the question to everyone
+      // Wait for spin + reveal animation then show question
       setTimeout(() => {
         room.state = 'question';
         broadcastRoom(code);
-      }, 2000);
+      }, 4500);
     } catch(e) {
       console.error('game:spinResult error:', e.message);
     }
