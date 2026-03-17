@@ -520,50 +520,64 @@ const mysql = require('mysql2/promise');
 let db;
 
 async function initDB() {
-  const url = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
-  if (url) {
-    db = await mysql.createPool(url + '?ssl={"rejectUnauthorized":false}');
-  } else {
-    db = await mysql.createPool({
-      host:     process.env.MYSQL_HOST     || process.env.MYSQLHOST,
-      port:     process.env.MYSQL_PORT     || process.env.MYSQLPORT     || 3306,
-      user:     process.env.MYSQL_USER     || process.env.MYSQLUSER     || 'root',
-      password: process.env.MYSQL_PASSWORD || process.env.MYSQL_ROOT_PASSWORD,
-      database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'railway',
-      ssl: { rejectUnauthorized: false },
-    });
+  const url = process.env.DATABASE_URL ||
+              process.env.MYSQL_PUBLIC_URL ||
+              process.env.MYSQL_URL;
+
+  try {
+    if (url) {
+      db = await mysql.createPool({
+        uri: url,
+        ssl: { rejectUnauthorized: false },
+        waitForConnections: true,
+        connectionLimit: 5,
+      });
+    } else {
+      db = await mysql.createPool({
+        host:     process.env.MYSQL_HOST || process.env.MYSQLHOST,
+        port:     parseInt(process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306),
+        user:     process.env.MYSQL_USER || process.env.MYSQLUSER || 'root',
+        password: process.env.MYSQL_PASSWORD || process.env.MYSQL_ROOT_PASSWORD,
+        database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || 'railway',
+        ssl: { rejectUnauthorized: false },
+        waitForConnections: true,
+        connectionLimit: 5,
+      });
+    }
+
+    await db.execute('SELECT 1');
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(20) DEFAULT 'player',
+        wins INT DEFAULT 0,
+        total_points INT DEFAULT 0,
+        games_played INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(`
+      INSERT IGNORE INTO users (email, name, password, role)
+      VALUES ('admin', 'Admin', 'admin1234', 'admin')
+    `);
+
+    console.log('✅ MySQL connected and tables ready');
+  } catch(e) {
+    console.error('❌ MySQL error:', e.message);
+    db = null;
   }
-
-  // Create users table if not exists
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      name VARCHAR(100) NOT NULL,
-      password VARCHAR(255) NOT NULL,
-      role VARCHAR(20) DEFAULT 'player',
-      wins INT DEFAULT 0,
-      total_points INT DEFAULT 0,
-      games_played INT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Insert admin if not exists
-  await db.execute(`
-    INSERT IGNORE INTO users (email, name, password, role)
-    VALUES ('admin', 'Admin', 'admin1234', 'admin')
-  `);
-
-  console.log('✅ MySQL connected and tables ready');
 }
-
-initDB().catch(e => console.error('❌ MySQL error:', e.message));
 
 // ─── REST: Auth endpoints ─────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) return res.json({ ok: false, msg: 'Faltan campos' });
+  if (!db) return res.json({ ok: false, msg: 'Base de datos no disponible' });
   try {
     await db.execute(
       'INSERT INTO users (email, name, password, role) VALUES (?, ?, ?, ?)',
