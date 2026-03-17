@@ -1524,22 +1524,23 @@ function showQuestion(room) {
   if (q) {
     const shuffled = [...q.opts].sort(() => Math.random() - 0.5);
     shuffled.forEach((opt, i) => {
+      const cleanOpt = opt.trim();
       const btn = document.createElement('button');
       btn.className = 'opt-btn';
       const letter = document.createElement('span');
       letter.className = 'opt-letter';
       letter.textContent = LETTERS[i] || String.fromCharCode(65 + i);
       btn.appendChild(letter);
-      btn.appendChild(document.createTextNode(opt));
+      btn.appendChild(document.createTextNode(cleanOpt));
 
       if (!myTurn || iHaveAnswered) {
         btn.disabled = true;
         if (iHaveAnswered) {
-          if (opt === q.a) btn.classList.add('correct');
-          else if (myAnswer && opt === myAnswer.answer && myAnswer.answer !== q.a) btn.classList.add('wrong');
+          if (cleanOpt === q.a.trim()) btn.classList.add('correct');
+          else if (myAnswer && cleanOpt === myAnswer.answer.trim() && myAnswer.answer.trim() !== q.a.trim()) btn.classList.add('wrong');
         }
       } else {
-        btn.onclick = () => submitAnswer(opt, q.a);
+        btn.onclick = () => submitAnswer(cleanOpt, q.a);
       }
       grid.appendChild(btn);
     });
@@ -1586,7 +1587,9 @@ function updateTimer(t) {
 
 function submitAnswer(answer, correctA) {
   clearInterval(timerInterval);
-  const isCorrect = answer === correctA;
+  const cleanAnswer = answer.trim();
+  const cleanCorrect = correctA.trim();
+  const isCorrect = cleanAnswer === cleanCorrect;
   if (isCorrect) Audio.correct();
   else if (answer === '__timeout__') Audio.timeout();
   else Audio.wrong();
@@ -1594,10 +1597,10 @@ function submitAnswer(answer, correctA) {
   document.querySelectorAll('.opt-btn').forEach(btn => {
     btn.disabled = true;
     const txt = btn.textContent.replace(/^[A-D]/, '').trim();
-    if (txt === correctA) btn.classList.add('correct');
-    else if (txt === answer && answer !== correctA) btn.classList.add('wrong');
+    if (txt === cleanCorrect) btn.classList.add('correct');
+    else if (txt === cleanAnswer && cleanAnswer !== cleanCorrect) btn.classList.add('wrong');
   });
-  setTimeout(() => socket.emit('game:answer', { answer }), 400);
+  setTimeout(() => socket.emit('game:answer', { answer: cleanAnswer }), 400);
 }
 
 function showAnswer(room) {
