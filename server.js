@@ -421,11 +421,30 @@ io.on('connection', (socket) => {
     socket.join(code);
     socket.data.roomCode = code;
 
-    // Small delay to ensure socket has fully joined the room
+    // Send current room state to this socket using the proper payload
     setTimeout(() => {
       console.log('📡 Sending room:update to socket, state:', room.state);
-      socket.emit('room:update', room);
-    }, 200);
+      // Use broadcastRoom format but only to this socket
+      const payload = {
+        code: room.code,
+        state: room.state,
+        players: room.players,
+        categories: room.categories || defaultCategories,
+        currentPlayerIdx: room.currentPlayerIdx,
+        currentCategory: room.currentCategory,
+        currentDifficulty: room.currentDifficulty,
+        currentQuestion: room.currentQuestion,
+        specialEffect: room.specialEffect || null,
+        currentRound: room.currentRound || 1,
+        totalRounds: room.totalRounds || 6,
+        turnInRound: room.turnInRound || 0,
+        questionIdx: room.questionIdx || 0,
+        lastAnswer: room.lastAnswer || null,
+        allAnswers: room.allAnswers || [],
+        winner: room.winner || null,
+      };
+      socket.emit('room:update', payload);
+    }, 300);
   });
 
   // Start game (host only)
@@ -441,7 +460,7 @@ io.on('connection', (socket) => {
     room.currentPlayerIdx = 0;
     room.usedQuestions = {}; // { categoryId: Set of used indices }
     io.to(code).emit('game:start', { roomCode: code });
-    setTimeout(() => broadcastRoom(code), 1500);
+    setTimeout(() => broadcastRoom(code), 2500);
   });
 
   // Spin wheel result
