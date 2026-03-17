@@ -445,6 +445,17 @@ io.on('connection', (socket) => {
   });
 
   // Spin wheel result
+  // Notify all players that spinning has started
+  socket.on('game:startSpin', () => {
+    const code = socket.data.roomCode;
+    const room = rooms[code];
+    if (!room) return;
+    const currentPlayer = room.players[room.currentPlayerIdx];
+    if (!currentPlayer || currentPlayer.id !== socket.id) return;
+    // Broadcast to everyone else that spin started
+    socket.to(code).emit('game:spinStarted');
+  });
+
   socket.on('game:spinResult', ({ categoryId, difficulty, special }) => {
     try {
       const code = socket.data.roomCode;
