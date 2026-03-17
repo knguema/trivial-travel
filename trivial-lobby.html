@@ -441,6 +441,55 @@ html, body {
 
 .status-connected { color: #2d7dd2; font-weight: 600; font-size: 11px; letter-spacing: 0.5px; }
 
+/* ── ROUND SELECTOR ── */
+.round-selector {
+  margin-bottom: 14px;
+}
+
+.round-label {
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8892b0;
+  margin-bottom: 10px;
+}
+
+.round-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.round-btn {
+  padding: 12px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid #1e2d50;
+  border-radius: 4px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: #8892b0;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+
+.round-btn:hover {
+  border-color: #2d7dd2;
+  color: #2d7dd2;
+  background: rgba(45,125,210,0.08);
+}
+
+.round-btn.selected {
+  border-color: #2d7dd2;
+  background: rgba(45,125,210,0.15);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(45,125,210,0.3);
+}
+
 /* ── HOST CONTROLS ── */
 .host-controls { display: none; }
 .host-controls.visible { display: block; }
@@ -603,8 +652,19 @@ html, body {
 
     <!-- Host controls -->
     <div class="host-controls" id="host-controls">
-      <div class="min-players-note" id="min-note">Necesitas al menos 2 jugadores para empezar</div>
-      <button class="btn-start" id="btn-start" onclick="startGame()">
+
+      <!-- Round selector -->
+      <div class="round-selector">
+        <span class="round-label">Número de preguntas</span>
+        <div class="round-btns">
+          <button class="round-btn" onclick="selectRounds(4)">4</button>
+          <button class="round-btn selected" onclick="selectRounds(6)">6</button>
+          <button class="round-btn" onclick="selectRounds(8)">8</button>
+          <button class="round-btn" onclick="selectRounds(10)">10</button>
+        </div>
+      </div>
+
+      <button class="btn-start ready" id="btn-start" onclick="startGame()">
         Empezar partida
       </button>
     </div>
@@ -734,9 +794,19 @@ function joinRoom() {
   });
 }
 
+// ── ROUNDS ───────────────────────────────────────────────────────────────────
+let selectedRounds = 6;
+
+function selectRounds(n) {
+  selectedRounds = n;
+  document.querySelectorAll('.round-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.textContent) === n);
+  });
+}
+
 function startGame() {
   if (!socket) return;
-  socket.emit('game:start');
+  socket.emit('game:start', { rounds: selectedRounds });
 }
 
 function leaveRoom() {
