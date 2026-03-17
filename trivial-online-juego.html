@@ -1124,6 +1124,12 @@ function connectSocket() {
     handleRoomUpdate(room);
   });
 
+  // Spectator animation — fires when current player clicks spin
+  socket.on('game:spinStarted', () => {
+    if (isSpinning) return;
+    startSpectatorSpin();
+  });
+
   socket.on('connect_error', (err) => {
     console.log('❌ Error conexión:', err.message);
   });
@@ -1194,7 +1200,32 @@ function showSpin(room) {
   renderMiniScores(room);
 }
 
-function animateSpinForSpectator(catId) {
+function startSpectatorSpin() {
+  if (isSpinning) return;
+  isSpinning = true;
+
+  const extra = 6 + Math.random() * 5;
+  const target = spinAngle + extra * Math.PI * 2;
+  const dur = 4000;
+  const start = performance.now();
+  const startAng = spinAngle;
+  const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+  startSpinTicks();
+
+  function frame(now) {
+    const p = Math.min((now - start) / dur, 1);
+    spinAngle = startAng + (target - startAng) * ease(p);
+    drawWheel(categories, spinAngle);
+    if (p > 0.6) slowSpinTicks((p - 0.6) / 0.4);
+    if (p < 1) { requestAnimationFrame(frame); return; }
+    stopSpinTicks();
+    isSpinning = false;
+    spinAngle = spinAngle % (Math.PI * 2);
+    // When finished — show whatever category the server sent (via room:update → showQuestion)
+  }
+  requestAnimationFrame(frame);
+}
   if (isSpinning) return;
   isSpinning = true;
 
@@ -1262,6 +1293,8 @@ function spinWheel() {
   if (isSpinning) return;
   isSpinning = true;
   Audio.click();
+  // Notify others that spin started
+  socket.emit('game:startSpin');
   document.getElementById('btn-spin').disabled = true;
   document.getElementById('spin-controls').style.display = 'none';
 
