@@ -464,31 +464,33 @@ io.on('connection', (socket) => {
   });
 
   // Spin wheel result
-  // game:startSpin — server generates angle, calculates result, broadcasts to ALL
-  socket.on('game:startSpin', () => {
+  // game:startSpin — player picks category (or random), server broadcasts result to ALL
+  socket.on('game:startSpin', ({ catId } = {}) => {
     const code = socket.data.roomCode;
     const room = rooms[code];
     if (!room) return;
     const currentPlayer = room.players[room.currentPlayerIdx];
     if (!currentPlayer || currentPlayer.id !== socket.id) return;
 
-    const cats = room.categories || defaultCategories;
-    const n = cats.length;
+    const cats = (room.categories || defaultCategories).filter(c => !c.special);
+    const allCats = room.categories || defaultCategories;
 
-    // Pick random target slice
-    const randSlice = Math.floor(Math.random() * n);
-    const extra = 6 + Math.random() * 5;
-    const winningCat = cats[randSlice];
+    // Pick category
+    let winningCat;
+    if (catId) {
+      winningCat = allCats.find(c => c.id === catId);
+    }
+    if (!winningCat) {
+      // Random from non-special
+      winningCat = cats[Math.floor(Math.random() * cats.length)];
+    }
 
     // Pick difficulty
     const diffs = ['easy', 'medium', 'hard'];
     const chosenDiff = winningCat.special ? 'special' : diffs[Math.floor(Math.random() * diffs.length)];
 
-    // Broadcast spin to ALL with winning category included
+    // Broadcast result to ALL players
     io.to(code).emit('game:doSpin', {
-      randSlice,
-      extra,
-      n,
       catId: winningCat.id,
       diff: chosenDiff,
       special: winningCat.special ? winningCat.id : null,
