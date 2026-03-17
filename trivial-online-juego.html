@@ -1136,19 +1136,25 @@ function connectSocket() {
     handleRoomUpdate(room);
   });
 
-  // Category result — show reveal animation to ALL players
+  // Category result — ALL players animate wheel to this category and see reveal
   socket.on('game:categoryResult', ({ categoryId, difficulty, special }) => {
     const cat = categories.find(c => c.id === categoryId);
     if (!cat) return;
 
-    // Animate spin to this category for everyone not already spinning
-    if (!isSpinning) {
+    if (isSpinning) {
+      // Current player is mid-spin — wait for it to finish then animate to result
+      const waitForSpin = setInterval(() => {
+        if (!isSpinning) {
+          clearInterval(waitForSpin);
+          animateSpinToCategory(categoryId, () => {
+            revealCategoryForAll(cat, difficulty, special);
+          });
+        }
+      }, 100);
+    } else {
       animateSpinToCategory(categoryId, () => {
         revealCategoryForAll(cat, difficulty, special);
       });
-    } else {
-      // Already spinning (it's my turn) — just show reveal when done
-      // The revealCategory call in spinWheel handles this
     }
   });
 
@@ -1422,8 +1428,6 @@ function spinWheel() {
   if (isSpinning) return;
   isSpinning = true;
   Audio.click();
-  // Notify others that spin started
-  socket.emit('game:startSpin');
   document.getElementById('btn-spin').disabled = true;
   document.getElementById('spin-controls').style.display = 'none';
 
@@ -1473,21 +1477,16 @@ function spinWheel() {
     const cat = categories[idx];
 
     selectedCatId = cat.id;
-    revealCategory(cat, roomState);
+    // Send to server — server will broadcast categoryResult to ALL players
+    if (cat.special) {
+      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
+    } else {
+      const diffs = ['easy', 'medium', 'hard'];
+      const diff = diffs[Math.floor(Math.random() * diffs.length)];
+      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: diff });
+    }
   }
   requestAnimationFrame(frame);
-}
-
-function revealCategory(cat, room) {
-  // Current player: just send spinResult to server
-  // Server broadcasts game:categoryResult to ALL → triggers animateSpinToCategory + revealCategoryForAll
-  if (cat.special) {
-    socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
-  } else {
-    const diffs = ['easy', 'medium', 'hard'];
-    const diff = diffs[Math.floor(Math.random() * diffs.length)];
-    socket.emit('game:spinResult', { categoryId: cat.id, difficulty: diff });
-  }
 }
 
 function flashSlice(cat) {
