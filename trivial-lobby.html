@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trivial — Lobby</title>
+<link rel="icon" type="image/png" href="logo-trivial.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :root {
-  --green:   #2d7dd2;
+  --blue:    #2d7dd2;
   --green-d: #1a6ab8;
   --white:   #ffffff;
   --text:    #e8eaf6;
@@ -31,7 +32,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #0d1235;
+  background: #0d1535;
   border: 1.5px solid var(--border);
   border-radius: 3px;
   padding: 10px 18px;
@@ -40,13 +41,13 @@ html, body {
   font-size: 13px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
   cursor: pointer;
   text-decoration: none;
   transition: all .15s;
   z-index: 10;
 }
-.btn-back:hover { border-color: var(--green); color: var(--green); }
+.btn-back:hover { border-color: #2d7dd2; color: #2d7dd2; }
 .btn-back svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
 
 /* ── PAGE ── */
@@ -79,7 +80,7 @@ html, body {
   font-size: 12px;
   letter-spacing: 4px;
   text-transform: uppercase;
-  color: var(--green);
+  color: #2d7dd2;
   margin-bottom: 12px;
   display: block;
 }
@@ -97,12 +98,12 @@ html, body {
 
 .header p {
   font-size: 13px;
-  color: var(--muted);
+  color: #8892b0;
 }
 
 /* ── CARD ── */
 .card {
-  background: #0d1235;
+  background: #0d1535;
   border: 1.5px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
@@ -125,7 +126,7 @@ html, body {
   font-size: 13px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
   cursor: pointer;
   transition: all .15s;
   position: relative;
@@ -136,7 +137,7 @@ html, body {
   position: absolute;
   bottom: -1.5px; left: 0; right: 0;
   height: 2px;
-  background: var(--green);
+  background: #2d7dd2;
   transform: scaleX(0);
   transition: transform .2s;
 }
@@ -176,8 +177,8 @@ html, body {
 }
 
 .field input:focus {
-  border-color: var(--green);
-  background: #0d1235;
+  border-color: #2d7dd2;
+  background: #0d1535;
   box-shadow: 0 0 0 3px rgba(24,194,90,0.08);
 }
 
@@ -203,7 +204,7 @@ html, body {
   border-left: 3px solid;
 }
 .msg.error   { background: #fef2f2; color: #991b1b; border-color: #ef4444; }
-.msg.success { background: #f0fdf4; color: #14532d; border-color: var(--green); }
+.msg.success { background: #f0fdf4; color: #14532d; border-color: #2d7dd2; }
 .msg.show    { display: block; }
 
 /* ── BUTTON ── */
@@ -225,7 +226,7 @@ html, body {
   gap: 8px;
 }
 
-.btn-primary { background: var(--green); color: #fff; }
+.btn-primary { background: #2d7dd2; color: #fff; }
 .btn-primary:hover { background: var(--green-d); }
 .btn-primary:active { transform: scale(0.99); }
 
@@ -256,7 +257,7 @@ html, body {
   font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
   margin-bottom: 8px;
   display: block;
 }
@@ -271,7 +272,7 @@ html, body {
   margin-bottom: 10px;
 }
 
-.room-code span { color: var(--green); }
+.room-code span { color: #2d7dd2; }
 
 .copy-btn {
   display: inline-flex;
@@ -286,16 +287,16 @@ html, body {
   font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
   cursor: pointer;
   transition: all .15s;
 }
-.copy-btn:hover { border-color: var(--green); color: var(--green); }
+.copy-btn:hover { border-color: #2d7dd2; color: #2d7dd2; }
 .copy-btn svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
 /* ── PLAYERS LIST ── */
 .players-section {
-  background: #0d1235;
+  background: #0d1535;
   border: 1.5px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
@@ -317,14 +318,14 @@ html, body {
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
 }
 
 .players-count {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800;
   font-size: 13px;
-  color: var(--green);
+  color: #2d7dd2;
 }
 
 .players-list {
@@ -341,8 +342,8 @@ html, body {
   gap: 12px;
   padding: 10px 12px;
   border-radius: 3px;
-  background: #f9fefb;
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #1e2d50;
   animation: rise .25s cubic-bezier(0.16,1,0.3,1) both;
 }
 
@@ -355,7 +356,8 @@ html, body {
 .player-name {
   flex: 1;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #e8eaf6;
 }
 
 .player-you {
@@ -364,8 +366,8 @@ html, body {
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--green);
-  background: rgba(24,194,90,0.1);
+  color: #2d7dd2;
+  background: rgba(45,125,210,0.15);
   padding: 3px 8px;
   border-radius: 2px;
 }
@@ -376,7 +378,7 @@ html, body {
   font-size: 10px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8892b0;
 }
 
 .waiting-row {
@@ -384,7 +386,7 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 16px 12px;
-  color: var(--muted);
+  color: #8892b0;
   font-size: 13px;
 }
 
@@ -401,7 +403,7 @@ html, body {
 
 @keyframes bounce {
   0%,100% { transform: translateY(0); background: var(--border); }
-  50%      { transform: translateY(-4px); background: var(--green); }
+  50%      { transform: translateY(-4px); background: #2d7dd2; }
 }
 
 /* ── STATUS ── */
@@ -420,7 +422,7 @@ html, body {
 .status-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: var(--green);
+  background: #2d7dd2;
   animation: pulse-dot 1.5s infinite;
   flex-shrink: 0;
 }
@@ -433,11 +435,11 @@ html, body {
 .status-text {
   flex: 1;
   margin-left: 8px;
-  color: var(--muted);
+  color: #8892b0;
   font-weight: 500;
 }
 
-.status-connected { color: var(--green); font-weight: 600; font-size: 11px; letter-spacing: 0.5px; }
+.status-connected { color: #2d7dd2; font-weight: 600; font-size: 11px; letter-spacing: 0.5px; }
 
 /* ── HOST CONTROLS ── */
 .host-controls { display: none; }
@@ -446,14 +448,14 @@ html, body {
 .min-players-note {
   text-align: center;
   font-size: 12px;
-  color: var(--muted);
+  color: #8892b0;
   margin-bottom: 12px;
 }
 
 .btn-start {
   width: 100%;
   padding: 16px;
-  background: var(--green);
+  background: #2d7dd2;
   color: #fff;
   border: none;
   border-radius: 3px;
@@ -478,7 +480,7 @@ html, body {
   text-align: center;
   padding: 16px;
   font-size: 13px;
-  color: var(--muted);
+  color: #8892b0;
 }
 
 .waiting-host.visible { display: block; }
@@ -516,7 +518,10 @@ html, body {
   <div class="screen active" id="screen-join">
 
     <div class="header">
-      <span class="brand">Trivial — Online</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+        <img src="logo-trivial.png" alt="Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover">
+        <span class="brand" style="margin-bottom:0">Trivial Travel</span>
+      </div>
       <h1>Sala de juego</h1>
       <p>Crea una sala o únete con el código de un amigo</p>
       <div id="wins-badge" style="display:none;margin-top:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--green);background:rgba(45,125,210,0.1);padding:5px 16px;border-radius:20px;border:1px solid rgba(45,125,210,0.2)">
