@@ -805,7 +805,7 @@ html, body {
 
   <div class="q-hud">
     <div class="q-hud-left">
-      <span class="q-hud-counter" id="q-counter">P 1/10</span>
+      <span class="q-hud-counter" id="q-counter">Ronda 1/10</span>
       <span class="q-hud-cat" id="q-cat">—</span>
     </div>
     <div class="q-hud-right">
@@ -1386,7 +1386,7 @@ function showQuestion(room) {
 
   setCategoryBg(room.currentCategory);
 
-  document.getElementById('q-counter').textContent = `P ${(room.questionIdx||0)+1}/${room.totalRounds||10}`;
+  document.getElementById('q-counter').textContent = `Ronda ${(room.questionIdx||0)+1}/${room.totalRounds||10}`;
   document.getElementById('q-cat').textContent = cat ? cat.name : '—';
   document.getElementById('q-text').textContent = q ? q.q : '—';
 
