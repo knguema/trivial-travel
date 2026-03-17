@@ -511,8 +511,8 @@ io.on('connection', (socket) => {
         room.currentQuestion = getUniqueQuestion(room, randCat, null);
         room.currentDifficulty = 'medium';
 
-        // Broadcast special result to all
-        io.to(code).emit('game:categoryResult', {
+        // Broadcast special result to all EXCEPT current player
+        socket.to(code).emit('game:categoryResult', {
           categoryId,
           difficulty: 'medium',
           special: special,
@@ -536,14 +536,14 @@ io.on('connection', (socket) => {
       const diffMap2 = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
       room.currentQuestion = getUniqueQuestion(room, categoryId, diffMap2[diff] || 'medio');
 
-      // First broadcast the category result to ALL players so they see the reveal
-      io.to(code).emit('game:categoryResult', {
+      // Broadcast category result to ALL EXCEPT the current player (who already saw it)
+      socket.to(code).emit('game:categoryResult', {
         categoryId,
         difficulty: diff,
         special: null,
       });
 
-      // Then after the reveal animation (2s), show the question
+      // Then after the reveal animation (2s), show the question to everyone
       setTimeout(() => {
         room.state = 'question';
         broadcastRoom(code);
