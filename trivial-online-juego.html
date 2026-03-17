@@ -1136,26 +1136,20 @@ function connectSocket() {
     handleRoomUpdate(room);
   });
 
-  // Category result — ALL players animate wheel to this category and see reveal
+  // Category result — SPECTATORS animate and see reveal
   socket.on('game:categoryResult', ({ categoryId, difficulty, special }) => {
     const cat = categories.find(c => c.id === categoryId);
     if (!cat) return;
+    // Spectators: animate to winning category then show reveal
+    animateSpinToCategory(categoryId, () => {
+      revealCategoryForAll(cat, difficulty, special);
+    });
+  });
 
-    if (isSpinning) {
-      // Current player is mid-spin — wait for it to finish then animate to result
-      const waitForSpin = setInterval(() => {
-        if (!isSpinning) {
-          clearInterval(waitForSpin);
-          animateSpinToCategory(categoryId, () => {
-            revealCategoryForAll(cat, difficulty, special);
-          });
-        }
-      }, 100);
-    } else {
-      animateSpinToCategory(categoryId, () => {
-        revealCategoryForAll(cat, difficulty, special);
-      });
-    }
+  // Spectators start spinning when current player clicks spin
+  socket.on('game:spinStarted', () => {
+    if (isSpinning) return;
+    startSpectatorSpin();
   });
 
   socket.on('error', (data) => {
@@ -1245,13 +1239,15 @@ function showSpin(room) {
   renderMiniScores(room);
 }
 
-function startSpectatorSpin() {
-  if (isSpinning) return;
-  isSpinning = true;
+let spectatorSpinning = false;
 
-  const extra = 6 + Math.random() * 5;
+function startSpectatorSpin() {
+  if (isSpinning || spectatorSpinning) return;
+  spectatorSpinning = true;
+
+  const extra = 4 + Math.random() * 3;
   const target = spinAngle + extra * Math.PI * 2;
-  const dur = 4000;
+  const dur = 3500;
   const start = performance.now();
   const startAng = spinAngle;
   const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
@@ -1259,20 +1255,24 @@ function startSpectatorSpin() {
   startSpinTicks();
 
   function frame(now) {
+    if (!spectatorSpinning) return; // interrupted by categoryResult
     const p = Math.min((now - start) / dur, 1);
     spinAngle = startAng + (target - startAng) * ease(p);
     drawWheel(categories, spinAngle);
     if (p > 0.6) slowSpinTicks((p - 0.6) / 0.4);
     if (p < 1) { requestAnimationFrame(frame); return; }
     stopSpinTicks();
-    isSpinning = false;
+    spectatorSpinning = false;
     spinAngle = spinAngle % (Math.PI * 2);
   }
   requestAnimationFrame(frame);
 }
 
 function animateSpinToCategory(catId, onDone) {
-  // Animate wheel so pointer lands on the given category
+  // Stop any free spectator spin
+  spectatorSpinning = false;
+  stopSpinTicks();
+
   const n = categories.length;
   const catIdx = categories.findIndex(c => c.id === catId);
   if (catIdx < 0) { if(onDone) onDone(); return; }
@@ -1428,6 +1428,8 @@ function spinWheel() {
   if (isSpinning) return;
   isSpinning = true;
   Audio.click();
+  // Tell spectators to start spinning
+  socket.emit('game:startSpin');
   document.getElementById('btn-spin').disabled = true;
   document.getElementById('spin-controls').style.display = 'none';
 
@@ -1477,14 +1479,22 @@ function spinWheel() {
     const cat = categories[idx];
 
     selectedCatId = cat.id;
-    // Send to server — server will broadcast categoryResult to ALL players
-    if (cat.special) {
-      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
-    } else {
-      const diffs = ['easy', 'medium', 'hard'];
-      const diff = diffs[Math.floor(Math.random() * diffs.length)];
-      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: diff });
-    }
+    // Show reveal locally for current player
+    // Spectators will get categoryResult from server
+    const diffs2 = ['easy', 'medium', 'hard'];
+    const chosenDiff = cat.special ? 'special' : diffs2[Math.floor(Math.random() * diffs2.length)];
+    
+    // Show reveal to current player
+    revealCategoryForAll(cat, chosenDiff, cat.special ? cat.id : null);
+
+    // Send to server after reveal
+    setTimeout(() => {
+      if (cat.special) {
+        socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
+      } else {
+        socket.emit('game:spinResult', { categoryId: cat.id, difficulty: chosenDiff });
+      }
+    }, 100);
   }
   requestAnimationFrame(frame);
 }
