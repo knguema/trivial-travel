@@ -3,6 +3,14 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
+// ─── Prevent crashes ──────────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+});
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -383,63 +391,63 @@ io.on('connection', (socket) => {
 
   // Spin wheel result
   socket.on('game:spinResult', ({ categoryId, difficulty }) => {
-    const code = socket.data.roomCode;
-    const room = rooms[code];
-    if (!room) return;
-    const currentPlayer = room.players[room.currentPlayerIdx];
-    if (currentPlayer.id !== socket.id) return;
+    try {
+      const code = socket.data.roomCode;
+      const room = rooms[code];
+      if (!room) return;
+      const currentPlayer = room.players[room.currentPlayerIdx];
+      if (!currentPlayer || currentPlayer.id !== socket.id) return;
 
-    console.log('🎡 spinResult:', categoryId, difficulty);
-    const diff = difficulty || 'medium';
-    const diffMap = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
-    const diffLabel = diffMap[diff] || 'medio';
+      console.log('🎡 spinResult:', categoryId, difficulty);
+      const diff = difficulty || 'medium';
+      const diffMap = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
+      const diffLabel = diffMap[diff] || 'medio';
 
-    room.currentCategory = categoryId;
-    room.currentDifficulty = diff;
+      room.currentCategory = categoryId;
+      room.currentDifficulty = diff;
 
-    // Pick question by category AND difficulty
-    const td = getTenantData(room.tenantId);
-    const pool = (td.questions[categoryId] || []).filter(q => q.diff === diffLabel);
-    const fallback = td.questions[categoryId] || [];
-    room.currentQuestion = pool.length
-      ? pool[Math.floor(Math.random() * pool.length)]
-      : fallback[Math.floor(Math.random() * fallback.length)] || null;
+      const td = getTenantData(room.tenantId);
+      const pool = (td.questions[categoryId] || []).filter(q => q.diff === diffLabel);
+      const fallback = td.questions[categoryId] || [];
+      room.currentQuestion = pool.length
+        ? pool[Math.floor(Math.random() * pool.length)]
+        : fallback[Math.floor(Math.random() * fallback.length)] || null;
 
-    room.state = 'question';
-    broadcastRoom(code);
+      room.state = 'question';
+      broadcastRoom(code);
+    } catch(e) {
+      console.error('game:spinResult error:', e.message);
+    }
   });
 
   // Answer question — only current player answers
   socket.on('game:answer', ({ answer }) => {
-    const code = socket.data.roomCode;
-    const room = rooms[code];
-    if (!room || room.state !== 'question') return;
+    try {
+      const code = socket.data.roomCode;
+      const room = rooms[code];
+      if (!room || room.state !== 'question') return;
+      if (!room.currentQuestion) return;
 
-    const currentPlayer = room.players[room.currentPlayerIdx];
-    if (currentPlayer.id !== socket.id) return; // only current player
+      const currentPlayer = room.players[room.currentPlayerIdx];
+      if (!currentPlayer || currentPlayer.id !== socket.id) return;
 
-    const correct = answer === room.currentQuestion.a;
-    if (correct) {
-      const diffPts = { easy: 3, medium: 6, hard: 12 };
-      const points = diffPts[room.currentDifficulty] || 6;
-      room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
-      currentPlayer.score = room.scores[socket.id];
-    }
-
-    room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer, correct };
-    room.allAnswers = [{ playerId: socket.id, playerName: currentPlayer.name, answer, correct }];
-    room.state = 'answer';
-    room.answers = {};
-
-    // Track wins
-    if (room.questionIdx >= 9) {
-      const winner = [...room.players].sort((a, b) => b.score - a.score)[0];
-      if (winner) {
-        room.winner = winner.name;
+      const correct = answer === room.currentQuestion.a;
+      if (correct) {
+        const diffPts = { easy: 3, medium: 6, hard: 12 };
+        const points = diffPts[room.currentDifficulty] || 6;
+        room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
+        currentPlayer.score = room.scores[socket.id];
       }
-    }
 
-    broadcastRoom(code);
+      room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer, correct };
+      room.allAnswers = [{ playerId: socket.id, playerName: currentPlayer.name, answer, correct }];
+      room.state = 'answer';
+      room.answers = {};
+
+      broadcastRoom(code);
+    } catch(e) {
+      console.error('game:answer error:', e.message);
+    }
   });
 
   // Next turn — any player can trigger
