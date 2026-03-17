@@ -420,8 +420,8 @@ io.on('connection', (socket) => {
 
     const correct = answer === room.currentQuestion.a;
     if (correct) {
-      const diffPts = { easy: 1, medium: 2, hard: 3 };
-      const points = diffPts[room.currentDifficulty] || 2;
+      const diffPts = { easy: 3, medium: 6, hard: 12 };
+      const points = diffPts[room.currentDifficulty] || 6;
       room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
       currentPlayer.score = room.scores[socket.id];
     }
