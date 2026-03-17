@@ -921,6 +921,10 @@ let categories = [
   { id:'history',  name:'Historia',  color:'#e84545', emoji:'📜' },
   { id:'eu',       name:'EU',        color:'#a259ff', emoji:'🇪🇺' },
   { id:'kenya',    name:'Kenya',     color:'#cc2200', emoji:'🦒' },
+  { id:'doble',    name:'x2 Pts',    color:'#FFD700', emoji:'⚡', special:true },
+  { id:'robo',     name:'Robo',      color:'#ff4dff', emoji:'💸', special:true },
+  { id:'bomba',    name:'Bomba',     color:'#ff6600', emoji:'💣', special:true },
+  { id:'skip',     name:'SKIP',      color:'#00e5ff', emoji:'⏭️', special:true },
 ];
 
 // ── CATEGORY BACKGROUNDS ─────────────────────────────────────────────────────
@@ -1241,11 +1245,43 @@ function revealCategory(cat, room) {
   flashSlice(cat);
 
   const reveal = document.getElementById('cat-reveal');
-  reveal.style.background = hexToRgba(cat.color, 0.12);
-  reveal.style.borderColor = hexToRgba(cat.color, 0.5);
+  reveal.style.background = hexToRgba(cat.color, 0.15);
+  reveal.style.borderColor = hexToRgba(cat.color, 0.6);
   reveal.style.color = cat.color;
 
-  // Auto difficulty by round
+  // Special sectors
+  if (cat.special) {
+    const specialDesc = {
+      doble: 'La próxima pregunta vale el DOBLE de puntos',
+      robo:  'Si fallas, tus puntos van al siguiente jugador',
+      bomba: 'Si fallas, PIERDES puntos',
+      skip:  'Pierdes tu turno, ¡suerte la próxima!'
+    };
+    document.getElementById('cat-reveal-name').textContent = `${cat.emoji} ${cat.name}`;
+
+    let badge = document.getElementById('cat-diff-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.id = 'cat-diff-badge';
+      badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;text-align:center;`;
+      document.getElementById('cat-reveal').appendChild(badge);
+    }
+    badge.textContent = specialDesc[cat.id] || '';
+    badge.style.background = hexToRgba(cat.color, 0.2);
+    badge.style.color = cat.color;
+
+    reveal.classList.add('show');
+    Audio.categoryReveal();
+
+    // Send special to server and auto-proceed
+    setTimeout(() => {
+      socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
+      reveal.classList.remove('show');
+    }, 2200);
+    return;
+  }
+
+  // Normal category
   const qIdx = room ? (room.questionIdx || 0) : 0;
   const diff = qIdx < 4 ? 'easy' : qIdx < 7 ? 'medium' : 'hard';
   const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff];
@@ -1253,7 +1289,6 @@ function revealCategory(cat, room) {
 
   document.getElementById('cat-reveal-name').textContent = cat.name.toUpperCase();
 
-  // Add difficulty badge inside reveal
   let badge = document.getElementById('cat-diff-badge');
   if (!badge) {
     badge = document.createElement('span');
@@ -1387,7 +1422,18 @@ function showQuestion(room) {
   setCategoryBg(room.currentCategory);
 
   document.getElementById('q-counter').textContent = `Ronda ${(room.questionIdx||0)+1}/${room.totalRounds||10}`;
-  document.getElementById('q-cat').textContent = cat ? cat.name : '—';
+  
+  // Show special effect badge
+  const catName = cat ? cat.name : '—';
+  const specialBadges = {
+    doble: '⚡ DOBLE PUNTOS',
+    robo:  '💸 ROBO',
+    bomba: '💣 BOMBA',
+  };
+  const specialLabel = room.specialEffect && specialBadges[room.specialEffect]
+    ? `${catName} · ${specialBadges[room.specialEffect]}`
+    : catName;
+  document.getElementById('q-cat').textContent = specialLabel;
   document.getElementById('q-text').textContent = q ? q.q : '—';
 
   const myScore = room.players.find(p => p.name === MY_NAME);
@@ -1501,17 +1547,26 @@ function showScoreboard(room) {
     : 'Última ronda';
 
   // Show last answer banner
-  const isCorrect = la && la.correct;
+  const isSkip    = la && la.special === 'skip';
+  const isCorrect = la && la.correct && !isSkip;
   const pts = isCorrect ? (q && q.diff === 'easy' ? 3 : q && q.diff === 'hard' ? 12 : 6) : 0;
+  const actualPts = room.specialEffect === 'doble' ? pts * 2 : pts;
   const banner = document.getElementById('sb-banner');
-  banner.className = `sb-answer-banner ${isCorrect ? 'correct' : 'wrong'}`;
-  document.getElementById('sb-icon').textContent         = isCorrect ? '+' : '—';
-  document.getElementById('sb-banner-title').textContent = isCorrect ? 'Correcto' : 'Incorrecto';
-  document.getElementById('sb-banner-detail').textContent = q
-    ? `Respuesta correcta: ${q.a}`
-    : '—';
-  document.getElementById('sb-banner-pts').textContent  = isCorrect ? `+${pts}` : '';
-  document.getElementById('sb-banner-pts').style.display = isCorrect ? 'block' : 'none';
+
+  if (isSkip) {
+    banner.className = 'sb-answer-banner wrong';
+    document.getElementById('sb-icon').textContent         = '⏭️';
+    document.getElementById('sb-banner-title').textContent = 'SKIP — Turno perdido';
+    document.getElementById('sb-banner-detail').textContent = `${cp ? cp.name : '—'} ha perdido su turno`;
+    document.getElementById('sb-banner-pts').style.display = 'none';
+  } else {
+    banner.className = `sb-answer-banner ${isCorrect ? 'correct' : 'wrong'}`;
+    document.getElementById('sb-icon').textContent         = isCorrect ? '+' : '—';
+    document.getElementById('sb-banner-title').textContent = isCorrect ? 'Correcto' : 'Incorrecto';
+    document.getElementById('sb-banner-detail').textContent = q ? `Respuesta correcta: ${q.a}` : '—';
+    document.getElementById('sb-banner-pts').textContent  = isCorrect ? `+${actualPts}` : '';
+    document.getElementById('sb-banner-pts').style.display = isCorrect ? 'block' : 'none';
+  }
 
   // Sorted players — use roomState as fallback
   const playerList = (room.players && room.players.length > 0)
