@@ -510,8 +510,18 @@ io.on('connection', (socket) => {
         const randCat = normalCats[Math.floor(Math.random() * normalCats.length)];
         room.currentQuestion = getUniqueQuestion(room, randCat, null);
         room.currentDifficulty = 'medium';
-        room.state = 'question';
-        broadcastRoom(code);
+
+        // Broadcast special result to all
+        io.to(code).emit('game:categoryResult', {
+          categoryId,
+          difficulty: 'medium',
+          special: special,
+        });
+
+        setTimeout(() => {
+          room.state = 'question';
+          broadcastRoom(code);
+        }, 2500);
         return;
       }
 
@@ -526,8 +536,18 @@ io.on('connection', (socket) => {
       const diffMap2 = { easy: 'fácil', medium: 'medio', hard: 'difícil' };
       room.currentQuestion = getUniqueQuestion(room, categoryId, diffMap2[diff] || 'medio');
 
-      room.state = 'question';
-      broadcastRoom(code);
+      // First broadcast the category result to ALL players so they see the reveal
+      io.to(code).emit('game:categoryResult', {
+        categoryId,
+        difficulty: diff,
+        special: null,
+      });
+
+      // Then after the reveal animation (2s), show the question
+      setTimeout(() => {
+        room.state = 'question';
+        broadcastRoom(code);
+      }, 2000);
     } catch(e) {
       console.error('game:spinResult error:', e.message);
     }
