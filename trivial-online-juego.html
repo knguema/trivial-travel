@@ -1147,7 +1147,16 @@ function handleRoomUpdate(room) {
 
   switch (room.state) {
     case 'waiting':
-    case 'lobby':   showWaiting(room);   break;
+    case 'lobby':
+      // If we're on the game page but got lobby state, retry after delay
+      // (server might still be transitioning to spinning)
+      showWaiting(room);
+      setTimeout(() => {
+        if (roomState && (roomState.state === 'lobby' || roomState.state === 'waiting')) {
+          socket.emit('room:rejoin', { code: ROOM_CODE, playerName: MY_NAME });
+        }
+      }, 2000);
+      break;
     case 'spinning': showSpin(room);      break;
     case 'question': showQuestion(room);  break;
     case 'answer':   showAnswer(room);    break;
