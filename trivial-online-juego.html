@@ -1453,7 +1453,11 @@ function showQuestion(room) {
     shuffled.forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt-btn';
-      btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span>${opt}`;
+      const letter = document.createElement('span');
+      letter.className = 'opt-letter';
+      letter.textContent = LETTERS[i] || String.fromCharCode(65 + i);
+      btn.appendChild(letter);
+      btn.appendChild(document.createTextNode(opt));
 
       if (!myTurn || iHaveAnswered) {
         btn.disabled = true;
