@@ -297,7 +297,25 @@ function createRoom(tenantId, hostName) {
 
 function broadcastRoom(code) {
   if (!rooms[code]) return;
-  io.to(code).emit('room:update', rooms[code]);
+  const room = rooms[code];
+  // Send slim version without full question bank
+  const payload = {
+    code: room.code,
+    state: room.state,
+    players: room.players,
+    categories: room.categories || defaultCategories,
+    currentPlayerIdx: room.currentPlayerIdx,
+    currentCategory: room.currentCategory,
+    currentDifficulty: room.currentDifficulty,
+    currentQuestion: room.currentQuestion,
+    specialEffect: room.specialEffect || null,
+    questionIdx: room.questionIdx || 0,
+    totalRounds: room.totalRounds || 10,
+    lastAnswer: room.lastAnswer || null,
+    allAnswers: room.allAnswers || [],
+    winner: room.winner || null,
+  };
+  io.to(code).emit('room:update', payload);
 }
 
 // ─── Socket.io ───────────────────────────────────────────────────────────────
@@ -694,6 +712,7 @@ app.get('/api/wins/:name', async (req, res) => {
 
 // ─── Update stats after game ──────────────────────────────────────────────────
 async function updateUserStats(playerName, points, isWinner) {
+  if (!db) return;
   try {
     await db.execute(
       'UPDATE users SET total_points = total_points + ?, games_played = games_played + 1, wins = wins + ? WHERE name = ?',
