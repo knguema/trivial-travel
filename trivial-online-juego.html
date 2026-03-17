@@ -1136,20 +1136,9 @@ function connectSocket() {
     handleRoomUpdate(room);
   });
 
-  // Category result — SPECTATORS animate and see reveal
-  socket.on('game:categoryResult', ({ categoryId, difficulty, special }) => {
-    const cat = categories.find(c => c.id === categoryId);
-    if (!cat) return;
-    // Spectators: animate to winning category then show reveal
-    animateSpinToCategory(categoryId, () => {
-      revealCategoryForAll(cat, difficulty, special);
-    });
-  });
-
-  // Spectators start spinning when current player clicks spin
-  socket.on('game:spinStarted', () => {
-    if (isSpinning) return;
-    startSpectatorSpin();
+  // ALL players receive spin parameters and animate together
+  socket.on('game:doSpin', ({ randSlice, extra, n, catId, diff, special }) => {
+    doSpin(randSlice, extra, n, catId, diff, special);
   });
 
   socket.on('error', (data) => {
@@ -1426,16 +1415,18 @@ function revealCategorySpectator(cat) {
 
 function spinWheel() {
   if (isSpinning) return;
-  isSpinning = true;
   Audio.click();
-  // Tell spectators to start spinning
-  socket.emit('game:startSpin');
   document.getElementById('btn-spin').disabled = true;
   document.getElementById('spin-controls').style.display = 'none';
+  // Server generates spin params and broadcasts to ALL
+  socket.emit('game:startSpin');
+}
 
-  const n        = categories.length;
-  const extra    = 6 + Math.random() * 5;
-  const randSlice= Math.floor(Math.random() * n);
+function doSpin(randSlice, extra, n, catId, diff, special) {
+  if (isSpinning) return;
+  isSpinning = true;
+  spectatorSpinning = false;
+
   const target   = spinAngle + extra * Math.PI * 2 + randSlice * (2 * Math.PI / n);
   const dur      = 4200;
   const start    = performance.now();
@@ -1448,53 +1439,31 @@ function spinWheel() {
     const p = Math.min((now - start) / dur, 1);
     spinAngle = startAng + (target - startAng) * ease(p);
     drawWheel(categories, spinAngle);
-
-    // Slow down ticks as spin decelerates
     if (p > 0.6) slowSpinTicks((p - 0.6) / 0.4);
-
     if (p < 1) { requestAnimationFrame(frame); return; }
 
     stopSpinTicks();
-
     isSpinning = false;
     spinAngle = spinAngle % (Math.PI * 2);
 
-    // Pointer is on the LEFT side (180° = π from east)
-    // Slice i covers: angle - π/2 + i*slice  to  angle - π/2 + (i+1)*slice
-    // We need which slice contains π (left side) in screen space
-    // In wheel space: pointer is at (π - angle) normalized
-    const n = categories.length;
-    const slice = (2 * Math.PI) / n;
+    // Server already determined the winning category
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return;
 
-    // pointer screen angle = π (left)
-    // wheel-space angle = π - spinAngle, normalized to [0, 2π)
-    let pointerWheel = (Math.PI - spinAngle) % (Math.PI * 2);
-    if (pointerWheel < 0) pointerWheel += Math.PI * 2;
+    selectedCatId = catId;
 
-    // Slices start at -π/2 (= 3π/2 normalized), so offset by π/2
-    let normalized = (pointerWheel + Math.PI / 2) % (Math.PI * 2);
-    if (normalized < 0) normalized += Math.PI * 2;
+    // ALL players see the same reveal
+    revealCategoryForAll(cat, diff, special);
 
-    const idx = Math.floor(normalized / slice) % n;
-    const cat = categories[idx];
-
-    selectedCatId = cat.id;
-    // Show reveal locally for current player
-    // Spectators will get categoryResult from server
-    const diffs2 = ['easy', 'medium', 'hard'];
-    const chosenDiff = cat.special ? 'special' : diffs2[Math.floor(Math.random() * diffs2.length)];
-    
-    // Show reveal to current player
-    revealCategoryForAll(cat, chosenDiff, cat.special ? cat.id : null);
-
-    // Send to server after reveal
-    setTimeout(() => {
-      if (cat.special) {
-        socket.emit('game:spinResult', { categoryId: cat.id, difficulty: 'special', special: cat.id });
-      } else {
-        socket.emit('game:spinResult', { categoryId: cat.id, difficulty: chosenDiff });
+    // Only current player sends spinResult to server
+    if (myPlayer && roomState) {
+      const cp = roomState.players[roomState.currentPlayerIdx];
+      if (cp && cp.id === myPlayer.id) {
+        setTimeout(() => {
+          socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special });
+        }, 1900);
       }
-    }, 100);
+    }
   }
   requestAnimationFrame(frame);
 }
