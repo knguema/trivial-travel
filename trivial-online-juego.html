@@ -1186,7 +1186,76 @@ function showSpin(room) {
     document.getElementById('btn-spin').disabled = false;
   }
 
+  // If not my turn but question arrived — animate spin for spectators
+  if (!myTurn && room.currentCategory && room.state === 'spinning') {
+    animateSpinForSpectator(room.currentCategory);
+  }
+
   renderMiniScores(room);
+}
+
+function animateSpinForSpectator(catId) {
+  if (isSpinning) return;
+  isSpinning = true;
+
+  const cat = categories.find(c => c.id === catId);
+  if (!cat) { isSpinning = false; return; }
+
+  // Find the target slice angle for this category
+  const n = categories.length;
+  const catIdx = categories.findIndex(c => c.id === catId);
+  const slice = (2 * Math.PI) / n;
+
+  // Target: pointer (left=π) points to this slice center
+  // slice center in wheel space = catIdx * slice + slice/2
+  // We need: π - spinAngle = catIdx * slice + slice/2 (mod 2π)
+  const sliceCenter = catIdx * slice + slice / 2;
+  const extra = 5 + Math.random() * 3;
+  const target = spinAngle + extra * Math.PI * 2 + (Math.PI - sliceCenter - spinAngle + Math.PI * 2 * 10) % (Math.PI * 2);
+
+  const dur = 3500;
+  const start = performance.now();
+  const startAng = spinAngle;
+  const ease = t => t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+  startSpinTicks();
+
+  function frame(now) {
+    const p = Math.min((now - start) / dur, 1);
+    spinAngle = startAng + (target - startAng) * ease(p);
+    drawWheel(categories, spinAngle);
+    if (p > 0.6) slowSpinTicks((p - 0.6) / 0.4);
+    if (p < 1) { requestAnimationFrame(frame); return; }
+    stopSpinTicks();
+    isSpinning = false;
+    spinAngle = spinAngle % (Math.PI * 2);
+    // Show reveal for spectators too
+    if (cat) revealCategorySpectator(cat);
+  }
+  requestAnimationFrame(frame);
+}
+
+function revealCategorySpectator(cat) {
+  flashSlice(cat);
+  const reveal = document.getElementById('cat-reveal');
+  reveal.style.background = hexToRgba(cat.color, 0.15);
+  reveal.style.borderColor = hexToRgba(cat.color, 0.6);
+  reveal.style.color = cat.color;
+  document.getElementById('cat-reveal-name').textContent = cat.special
+    ? `${cat.emoji} ${cat.name}`
+    : cat.name.toUpperCase();
+  let badge = document.getElementById('cat-diff-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'cat-diff-badge';
+    badge.style.cssText = `font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-top:4px;`;
+    document.getElementById('cat-reveal').appendChild(badge);
+  }
+  badge.textContent = '';
+  badge.style.display = 'none';
+  reveal.classList.add('show');
+  Audio.categoryReveal();
+  setTimeout(() => reveal.classList.remove('show'), 2000);
 }
 
 function spinWheel() {
@@ -1289,7 +1358,8 @@ function revealCategory(cat, room) {
 
   // Normal category
   const qIdx = room ? (room.currentRound || 1) : 1;
-  const diff = qIdx <= 2 ? 'easy' : qIdx <= 4 ? 'medium' : 'hard';
+  const diffs = ['easy', 'medium', 'hard'];
+  const diff = diffs[Math.floor(Math.random() * diffs.length)];
   const diffLabel = { easy:'Fácil +3', medium:'Medio +6', hard:'Difícil +12' }[diff];
   const diffColor = { easy:'#18c25a', medium:'#f5a623', hard:'#e84545' }[diff];
 
@@ -1560,8 +1630,9 @@ function showScoreboard(room) {
   // Show last answer banner
   const isSkip    = la && la.special === 'skip';
   const isCorrect = la && la.correct && !isSkip;
-  const pts = isCorrect ? (q && q.diff === 'easy' ? 3 : q && q.diff === 'hard' ? 12 : 6) : 0;
-  const actualPts = room.specialEffect === 'doble' ? pts * 2 : pts;
+  const diffPtsMap = { easy: 3, medium: 6, hard: 12 };
+  const basePts = diffPtsMap[room.currentDifficulty] || 6;
+  const actualPts = isCorrect ? (room.specialEffect === 'doble' ? basePts * 2 : basePts) : 0;
   const banner = document.getElementById('sb-banner');
 
   if (isSkip) {
