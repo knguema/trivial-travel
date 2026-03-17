@@ -1098,24 +1098,39 @@ function spinWheel() {
   document.getElementById('spin-controls').style.display = 'none';
 }
 
-function doSpin(catId, diff, special) {
+function doSpin(catId, diff, special, isMeTurn) {
   if (isSpinning) return;
-  isSpinning = true;
 
   const cat = categories.find(c => c.id === catId);
-  if (!cat) { isSpinning = false; return; }
+  if (!cat) return;
 
   const n = categories.length;
   const catIdx = categories.findIndex(c => c.id === catId);
   const slice = (2 * Math.PI) / n;
 
-  // Calculate target angle so pointer (left side) lands on catIdx
-  const pointerTarget = catIdx * slice + slice / 2; // center of slice in wheel space
-  const extra = 6 + Math.random() * 4;
-  const currentNorm = ((Math.PI - spinAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-  const angleDiff = ((pointerTarget - currentNorm) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
-  const target = spinAngle + extra * Math.PI * 2 + angleDiff;
+  // Pointer is on the LEFT (angle = π in screen space).
+  // Slice i is drawn from: spinAngle - π/2 + i*slice  to  spinAngle - π/2 + (i+1)*slice
+  // Pointer hits slice i when its screen angle = π, i.e.:
+  //   spinAngle - π/2 + i*slice <= π <= spinAngle - π/2 + (i+1)*slice
+  // => spinAngle = π + π/2 - i*slice - slice/2  (center of slice under pointer)
+  // => spinAngle = 3π/2 - catIdx*slice - slice/2
+  const targetAngle = (3 * Math.PI / 2) - catIdx * slice - slice / 2;
 
+  // Add extra full rotations so it spins visibly
+  const extra = 5 + Math.random() * 4;
+  const diff2 = ((targetAngle - (spinAngle % (Math.PI*2))) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+  const target = spinAngle + extra * Math.PI * 2 + diff2;
+
+  // If not my turn — just show the result instantly (no animation for spectators)
+  if (!isMeTurn) {
+    spinAngle = target % (Math.PI * 2);
+    drawWheel(categories, spinAngle);
+    showReveal(cat, diff, special);
+    return;
+  }
+
+  // My turn — animate
+  isSpinning = true;
   const dur = 4200;
   const start = performance.now();
   const startAng = spinAngle;
@@ -1128,21 +1143,14 @@ function doSpin(catId, diff, special) {
     if (p < 1) { requestAnimationFrame(frame); return; }
 
     isSpinning = false;
-    spinAngle = spinAngle % (Math.PI * 2);
+    spinAngle = target % (Math.PI * 2);
     drawWheel(categories, spinAngle);
-
-    // Show reveal to ALL
     showReveal(cat, diff, special);
 
-    // Only current player sends spinResult
-    if (myPlayer && roomState) {
-      const cp = roomState.players[roomState.currentPlayerIdx];
-      if (cp && cp.id === myPlayer.id) {
-        setTimeout(() => {
-          socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special || null });
-        }, 1900);
-      }
-    }
+    // Send spinResult to server
+    setTimeout(() => {
+      socket.emit('game:spinResult', { categoryId: catId, difficulty: diff, special: special || null });
+    }, 1900);
   }
   requestAnimationFrame(frame);
 }
@@ -1201,6 +1209,7 @@ function drawWheel(cats, angle, highlightId = null) {
     const e = s + slice;
     const highlight = highlightId === cat.id;
 
+    // Slice fill
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, highlight ? r + 4 : r, s, e);
@@ -1211,25 +1220,42 @@ function drawWheel(cats, angle, highlightId = null) {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Emoji label
+    // Text (emoji + short name), rotated along slice
     const mid = s + slice / 2;
-    const lr = r * 0.68;
+    const emojiR = r * 0.72;
+    const nameR  = r * 0.45;
+    const emojiSize = Math.max(12, Math.min(18, Math.floor(r * slice / 2.5)));
+    const nameSize  = Math.max(7,  Math.min(11, Math.floor(r * slice / 4)));
+
+    // Emoji
     ctx.save();
-    ctx.translate(cx + Math.cos(mid) * lr, cy + Math.sin(mid) * lr);
+    ctx.translate(cx + Math.cos(mid) * emojiR, cy + Math.sin(mid) * emojiR);
     ctx.rotate(mid + Math.PI/2);
-    ctx.font = `${Math.max(13, Math.min(20, Math.floor(r * slice / 2.2)))}px serif`;
+    ctx.font = `${emojiSize}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff';
-    ctx.fillText(cat.emoji || cat.name.charAt(0), 0, 0);
+    ctx.fillText(cat.emoji || '', 0, 0);
+    ctx.restore();
+
+    // Short name
+    const shortName = cat.name.length > 6 ? cat.name.slice(0, 6) : cat.name;
+    ctx.save();
+    ctx.translate(cx + Math.cos(mid) * nameR, cy + Math.sin(mid) * nameR);
+    ctx.rotate(mid + Math.PI/2);
+    ctx.font = `bold ${nameSize}px 'Barlow Condensed', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(shortName.toUpperCase(), 0, 0);
     ctx.restore();
   });
 
   // Outer ring
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(45,125,210,0.4)';
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(45,125,210,0.5)';
+  ctx.lineWidth = 5;
   ctx.stroke();
 }
 
@@ -1543,9 +1569,11 @@ function connectSocket() {
   });
 
   // ALL players receive category result
-  // ALL players animate the wheel to same result
+  // ALL players receive same spin result — only current player animates
   socket.on('game:doSpin', ({ catId, diff, special }) => {
-    doSpin(catId, diff, special);
+    const isMeTurn = myPlayer && roomState &&
+      roomState.players[roomState.currentPlayerIdx]?.id === myPlayer.id;
+    doSpin(catId, diff, special, isMeTurn);
   });
 
   socket.on('error', (data) => {
