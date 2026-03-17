@@ -458,7 +458,8 @@ io.on('connection', (socket) => {
     room.turnInRound  = 0;
     room.totalRounds  = rounds || 6;
     room.currentPlayerIdx = 0;
-    room.usedQuestions = {}; // { categoryId: Set of used indices }
+    room.usedQuestions = {};
+    room.lastCatPerPlayer = {}; // { categoryId: Set of used indices }
     io.to(code).emit('game:start', { roomCode: code });
     setTimeout(() => broadcastRoom(code), 2500);
   });
@@ -475,15 +476,24 @@ io.on('connection', (socket) => {
     const cats = (room.categories || defaultCategories).filter(c => !c.special);
     const allCats = room.categories || defaultCategories;
 
+    // Track last category per player to avoid repeats
+    if (!room.lastCatPerPlayer) room.lastCatPerPlayer = {};
+    const lastCat = room.lastCatPerPlayer[currentPlayer.name];
+
     // Pick category
     let winningCat;
     if (catId) {
       winningCat = allCats.find(c => c.id === catId);
     }
     if (!winningCat) {
-      // Random from non-special
-      winningCat = cats[Math.floor(Math.random() * cats.length)];
+      // Random but different from last category this player had
+      const available = cats.filter(c => c.id !== lastCat);
+      const pool = available.length > 0 ? available : cats;
+      winningCat = pool[Math.floor(Math.random() * pool.length)];
     }
+
+    // Remember this category for this player
+    room.lastCatPerPlayer[currentPlayer.name] = winningCat.id;
 
     // Pick difficulty
     const diffs = ['easy', 'medium', 'hard'];
