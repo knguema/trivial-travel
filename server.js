@@ -356,10 +356,12 @@ io.on('connection', (socket) => {
   console.log('connect:', socket.id);
 
   // Create room
-  socket.on('room:create', ({ tenantId = 'default', playerName }) => {
+  socket.on('room:create', ({ tenantId = 'default', playerName, isPublic = false }) => {
     const code = createRoom(tenantId, playerName);
     const room = rooms[code];
     room.host = socket.id;
+    room.isPublic = isPublic;
+    room.hostName = playerName;
     const player = { id: socket.id, name: playerName, score: 0, color: '#E84545' };
     room.players.push(player);
     room.scores[socket.id] = 0;
@@ -837,6 +839,18 @@ app.get('/api/users', async (req, res) => {
     const [rows] = await db.execute("SELECT email, name, role FROM users WHERE role != 'admin'");
     res.json(rows);
   } catch(e) { res.json([]); }
+});
+
+app.get('/api/public-rooms', (req, res) => {
+  const publicRooms = Object.values(rooms)
+    .filter(r => r.isPublic && r.state === 'lobby' && r.players.length < 6)
+    .map(r => ({
+      code: r.code,
+      hostName: r.hostName || '—',
+      players: r.players.length,
+      maxPlayers: 6,
+    }));
+  res.json(publicRooms);
 });
 
 app.get('/api/ranking', async (req, res) => {
