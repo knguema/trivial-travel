@@ -898,4 +898,11 @@ app.post('/api/tenant/:id/questions', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Trivial server running on http://localhost:${PORT}`));
+
+// Start server and connect DB
+console.log('🔌 DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('🔌 MYSQL_ROOT_PASSWORD:', process.env.MYSQL_ROOT_PASSWORD ? 'SET' : 'NOT SET');
+
+initDB().finally(() => {
+  server.listen(PORT, () => console.log(`Trivial server running on http://localhost:${PORT}`));
+});
