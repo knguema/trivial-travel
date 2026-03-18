@@ -326,6 +326,7 @@ html, body {
 </div>
 
 <script>
+// v2 - fixed IA navigation
 let selectedLevel = null;
 
 function selectLevel(level) {
@@ -337,10 +338,10 @@ function selectLevel(level) {
 }
 
 function startGame() {
-  if (!selectedLevel) {
-    selectLevel('facil');
-  }
-  window.location.href = 'trivial-ia-juego.html?nivel=' + selectedLevel;
+  if (!selectedLevel) selectLevel('facil');
+  const url = 'trivial-ia-juego.html?nivel=' + encodeURIComponent(selectedLevel);
+  console.log('Navigating to:', url);
+  window.location.replace(url);
 }
 </script>
 
