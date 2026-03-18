@@ -347,6 +347,7 @@ function broadcastRoom(code) {
     lastAnswer: room.lastAnswer || null,
     allAnswers: room.allAnswers || [],
     winner: room.winner || null,
+    isPublic: room.isPublic || false,
   };
   io.to(code).emit('room:update', payload);
 }
