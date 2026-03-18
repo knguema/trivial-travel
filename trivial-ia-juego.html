@@ -749,8 +749,39 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function startGame() {
-  const pool = [...QUESTIONS[level]].sort(() => Math.random() - 0.5).slice(0, TOTAL_Q);
-  questions   = pool;
+  const allQ = [...QUESTIONS[level]];
+
+  // Group questions by category
+  const byCat = {};
+  allQ.forEach(q => {
+    if (!byCat[q.cat]) byCat[q.cat] = [];
+    byCat[q.cat].push(q);
+  });
+
+  // Shuffle within each category
+  Object.values(byCat).forEach(arr => arr.sort(() => Math.random() - 0.5));
+
+  // Pick questions interleaving categories so they don't repeat
+  const pool = [];
+  const cats = Object.keys(byCat);
+  let round = 0;
+  while (pool.length < TOTAL_Q) {
+    let added = false;
+    for (const cat of cats.sort(() => Math.random() - 0.5)) {
+      if (pool.length >= TOTAL_Q) break;
+      if (byCat[cat][round]) {
+        pool.push(byCat[cat][round]);
+        added = true;
+      }
+    }
+    round++;
+    if (!added) break; // no more questions
+  }
+
+  // Final shuffle so order is random but categories are spread
+  pool.sort(() => Math.random() - 0.5);
+
+  questions   = pool.slice(0, TOTAL_Q);
   currentIdx  = 0;
   score       = 0;
   correct     = 0;
@@ -769,9 +800,10 @@ function startGame() {
 
 function simulateIA(level) {
   const acc = { facil: 0.55, medio: 0.70, dificil: 0.88 };
+  const pts = LEVEL_PTS[level] || 3;
   let s = 0;
   for (let i = 0; i < TOTAL_Q; i++) {
-    if (Math.random() < acc[level]) s++;
+    if (Math.random() < acc[level]) s += pts;
   }
   return s;
 }
@@ -839,12 +871,15 @@ function updateTimer(t, max) {
   document.getElementById('timer-num').textContent = t;
 }
 
+const LEVEL_PTS = { facil: 3, medio: 6, dificil: 12 };
+
 function answer(chosen, correct_a, opts) {
   clearInterval(timerInterval);
   totalTime += (TIME_LIMIT[level] - timeLeft);
 
   const isCorrect = chosen === correct_a;
-  if (isCorrect) { score++; correct++; }
+  const pts = LEVEL_PTS[level] || 3;
+  if (isCorrect) { score += pts; correct++; }
   else           { wrong++; }
 
   document.getElementById('score-display').textContent = score;
@@ -915,7 +950,7 @@ function showResults() {
   document.getElementById('res-correct').textContent = correct;
   document.getElementById('res-wrong').textContent   = wrong;
   document.getElementById('res-time').textContent    = avgTime + 's';
-  document.getElementById('ia-score-display').textContent = `${iaScore} / ${TOTAL_Q}`;
+  document.getElementById('ia-score-display').textContent = `${iaScore} pts`;
 
   const verdict = document.getElementById('ia-verdict');
   if (score > iaScore) {
