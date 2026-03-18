@@ -92,7 +92,6 @@ html,body { min-height:100%; font-family:'Barlow',sans-serif; background:#0a0e1a
     <div class="table-header">
       <span style="text-align:center">#</span>
       <span>Jugador</span>
-      <span style="text-align:center">🏆 Wins</span>
       <span style="text-align:center">⚡ Pts</span>
       <span style="text-align:center">🎮</span>
     </div>
@@ -185,7 +184,6 @@ function render(players) {
           <span class="rank-name">${p.name}</span>
           ${isMe?'<span class="rank-me">Tú</span>':''}
         </div>
-        <div class="rank-stat rank-wins">${p.wins}</div>
       </div>`;
   }).join('');
 }
