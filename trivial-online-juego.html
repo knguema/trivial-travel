@@ -308,26 +308,17 @@ html, body {
   box-shadow: none;
 }
 
-/* ── SPIN TIMER ── */
-.spin-timer-wrap {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; max-width: 280px; margin-bottom: 14px;
-}
-.spin-timer-bar {
-  flex: 1; height: 4px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px; overflow: hidden;
-}
-.spin-timer-fill {
-  height: 100%; width: 100%;
-  background: #2d7dd2;
-  transition: width 1s linear, background .3s;
-  border-radius: 2px;
-}
-.spin-timer-num {
+/* ── SPIN COUNTDOWN BADGE (top-left) ── */
+.spin-countdown-badge {
+  position: absolute;
+  top: 16px; left: 16px;
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800; font-size: 18px;
-  color: #fff; min-width: 24px; text-align: center;
+  font-weight: 900; font-size: 32px;
+  color: #fff;
+  z-index: 20;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  transition: color .3s;
 }
 
 /* ── SPIN WAITING ── */
@@ -807,12 +798,13 @@ html, body {
     <span class="cat-reveal-name" id="cat-reveal-name">—</span>
   </div>
 
+  <!-- Spin countdown — top left, only number -->
+  <div class="spin-countdown-badge" id="spin-countdown-badge" style="display:none">
+    <span id="spin-timer-num">15</span>s
+  </div>
+
   <!-- Spin button / waiting -->
   <div class="spin-controls" id="spin-controls">
-    <div class="spin-timer-wrap">
-      <div class="spin-timer-bar"><div class="spin-timer-fill" id="spin-timer-fill"></div></div>
-      <span class="spin-timer-num" id="spin-timer-num">15</span>
-    </div>
     <button class="btn-main" id="btn-spin" onclick="spinWheel()">Girar ruleta</button>
   </div>
 
@@ -1115,25 +1107,26 @@ function showSpin(room) {
 
     // Start 15s countdown — auto-spin if player doesn't
     let t = SPIN_TIME;
-    const fill = document.getElementById('spin-timer-fill');
-    const num  = document.getElementById('spin-timer-num');
-    if (fill) fill.style.width = '100%';
-    if (num)  num.textContent = t;
+    const badge = document.getElementById('spin-countdown-badge');
+    const num   = document.getElementById('spin-timer-num');
+    if (badge) badge.style.display = 'block';
+    if (num)   num.textContent = t;
 
     spinCountdownInterval = setInterval(() => {
       t--;
-      if (fill) {
-        fill.style.width = `${(t / SPIN_TIME) * 100}%`;
-        fill.style.background = t <= 5 ? '#e84545' : t <= 8 ? '#f5a623' : '#2d7dd2';
-      }
       if (num) num.textContent = t;
+      if (badge) badge.style.color = t <= 5 ? '#e84545' : t <= 8 ? '#f5a623' : '#fff';
       if (t <= 0) {
         clearInterval(spinCountdownInterval);
-        spinWheel(); // auto-spin
+        if (badge) badge.style.display = 'none';
+        spinWheel();
       }
     }, 1000);
   } else {
     controls.style.display = 'none';
+    // Hide badge for spectators
+    const badge = document.getElementById('spin-countdown-badge');
+    if (badge) badge.style.display = 'none';
     waitEl.classList.add('show');
     document.getElementById('spin-wait-text').textContent = `${cp ? cp.name : '—'} está girando...`;
   }
@@ -1144,6 +1137,8 @@ function showSpin(room) {
 function spinWheel() {
   if (isSpinning) return;
   clearInterval(spinCountdownInterval);
+  const badge = document.getElementById('spin-countdown-badge');
+  if (badge) badge.style.display = 'none';
   socket.emit('game:startSpin', { catId: null });
   document.getElementById('btn-spin').disabled = true;
   document.getElementById('spin-controls').style.display = 'none';
