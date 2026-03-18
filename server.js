@@ -43,6 +43,7 @@ const defaultCategories = [
   { id: 'robo',    name: 'Robo',      color: '#ff4dff', emoji: '💸', special: true },
   { id: 'bomba',   name: 'Bomba',     color: '#ff6600', emoji: '💣', special: true },
   { id: 'skip',    name: 'SKIP',      color: '#00e5ff', emoji: '⏭️', special: true },
+  { id: 'suerte',  name: 'Suerte',    color: '#00ff88', emoji: '🍀', special: true },
 ];
 
 const defaultQuestions = {
@@ -459,7 +460,8 @@ io.on('connection', (socket) => {
     room.totalRounds  = rounds || 6;
     room.currentPlayerIdx = 0;
     room.usedQuestions = {};
-    room.lastCatPerPlayer = {}; // { categoryId: Set of used indices }
+    room.lastCatPerPlayer = {};
+    room.usedCatsPerPlayer = {}; // { categoryId: Set of used indices }
     io.to(code).emit('game:start', { roomCode: code });
     setTimeout(() => broadcastRoom(code), 2500);
   });
@@ -476,9 +478,21 @@ io.on('connection', (socket) => {
     const cats = (room.categories || defaultCategories).filter(c => !c.special);
     const allCats = room.categories || defaultCategories;
 
-    // Track last category per player to avoid repeats
-    if (!room.lastCatPerPlayer) room.lastCatPerPlayer = {};
-    const lastCat = room.lastCatPerPlayer[currentPlayer.name];
+    // Track used categories per player — avoid repeats until all used
+    if (!room.usedCatsPerPlayer) room.usedCatsPerPlayer = {};
+    if (!room.usedCatsPerPlayer[currentPlayer.name]) room.usedCatsPerPlayer[currentPlayer.name] = [];
+
+    const usedCats = room.usedCatsPerPlayer[currentPlayer.name];
+    const normalCats = cats; // already filtered non-special
+
+    // Filter out already used categories
+    let available = normalCats.filter(c => !usedCats.includes(c.id));
+
+    // If all used, reset for this player
+    if (available.length === 0) {
+      room.usedCatsPerPlayer[currentPlayer.name] = [];
+      available = normalCats;
+    }
 
     // Pick category
     let winningCat;
@@ -486,24 +500,25 @@ io.on('connection', (socket) => {
       winningCat = allCats.find(c => c.id === catId);
     }
     if (!winningCat) {
-      // Random but different from last category this player had
-      const available = cats.filter(c => c.id !== lastCat);
-      const pool = available.length > 0 ? available : cats;
-      winningCat = pool[Math.floor(Math.random() * pool.length)];
+      winningCat = available[Math.floor(Math.random() * available.length)];
     }
 
-    // Remember this category for this player
-    room.lastCatPerPlayer[currentPlayer.name] = winningCat.id;
+    // Mark as used
+    room.usedCatsPerPlayer[currentPlayer.name].push(winningCat.id);
 
     // Pick difficulty
     const diffs = ['easy', 'medium', 'hard'];
     const chosenDiff = winningCat.special ? 'special' : diffs[Math.floor(Math.random() * diffs.length)];
+
+    // Pick extra rotations (same for all clients so they land at same angle)
+    const extraRotations = 5 + Math.random() * 3;
 
     // Broadcast result to ALL players
     io.to(code).emit('game:doSpin', {
       catId: winningCat.id,
       diff: chosenDiff,
       special: winningCat.special ? winningCat.id : null,
+      extra: extraRotations,
     });
   });
 
@@ -532,6 +547,17 @@ io.on('connection', (socket) => {
           // Skip turn — go straight to answer/scoreboard
           room.state = 'answer';
           room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer: '__skip__', correct: false, special: 'skip' };
+          room.allAnswers = [];
+          broadcastRoom(code);
+          return;
+        }
+
+        if (special === 'suerte') {
+          // Lucky! +6 points, no question needed
+          room.scores[socket.id] = (room.scores[socket.id] || 0) + 6;
+          currentPlayer.score = room.scores[socket.id];
+          room.state = 'answer';
+          room.lastAnswer = { playerId: socket.id, playerName: currentPlayer.name, answer: '__suerte__', correct: true, special: 'suerte' };
           room.allAnswers = [];
           broadcastRoom(code);
           return;
@@ -586,8 +612,25 @@ io.on('connection', (socket) => {
         // Apply special effects
         if (room.specialEffect === 'doble') points *= 2;
 
-        room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
-        currentPlayer.score = room.scores[socket.id];
+        if (room.specialEffect === 'robo') {
+          // ROBO: si aciertas, robas puntos al jugador que va primero
+          const sorted = [...room.players].sort((a, b) => b.score - a.score);
+          const leader = sorted.find(p => p.id !== socket.id);
+          if (leader && leader.score > 0) {
+            const stolen = Math.min(points, leader.score);
+            room.scores[leader.id] = (room.scores[leader.id] || 0) - stolen;
+            leader.score = room.scores[leader.id];
+            room.scores[socket.id] = (room.scores[socket.id] || 0) + stolen;
+            currentPlayer.score = room.scores[socket.id];
+          } else {
+            // No one to rob — just get the points
+            room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
+            currentPlayer.score = room.scores[socket.id];
+          }
+        } else {
+          room.scores[socket.id] = (room.scores[socket.id] || 0) + points;
+          currentPlayer.score = room.scores[socket.id];
+        }
       } else {
         // Failed answer effects
         if (room.specialEffect === 'bomba') {
@@ -595,16 +638,6 @@ io.on('connection', (socket) => {
           const penalty = diffPts[room.currentDifficulty] || 6;
           room.scores[socket.id] = Math.max(0, (room.scores[socket.id] || 0) - penalty);
           currentPlayer.score = room.scores[socket.id];
-        } else if (room.specialEffect === 'robo') {
-          // Give points to next player
-          const nextIdx = (room.currentPlayerIdx + 1) % room.players.length;
-          const nextPlayer = room.players[nextIdx];
-          if (nextPlayer) {
-            const diffPts = { easy: 3, medium: 6, hard: 12 };
-            const pts = diffPts[room.currentDifficulty] || 6;
-            room.scores[nextPlayer.id] = (room.scores[nextPlayer.id] || 0) + pts;
-            nextPlayer.score = room.scores[nextPlayer.id];
-          }
         }
       }
 
