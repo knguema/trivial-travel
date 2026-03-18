@@ -33,8 +33,8 @@ html,body { min-height:100%; font-family:'Barlow',sans-serif; background:#0a0e1a
 
 /* TABLE */
 .ranking-wrap { width:100%; max-width:620px; }
-.table-header { display:grid; grid-template-columns:48px 1fr 80px 80px 70px; padding:8px 16px 12px; gap:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.25); }
-.ranking-row { display:grid; grid-template-columns:48px 1fr 80px 80px 70px; align-items:center; gap:8px; padding:14px 16px; border-radius:4px; margin-bottom:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); transition:background .15s; animation:rowIn .35s cubic-bezier(0.16,1,0.3,1) both; }
+.table-header { display:grid; grid-template-columns:48px 1fr 100px; padding:8px 16px 12px; gap:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.25); }
+.ranking-row { display:grid; grid-template-columns:48px 1fr 100px; align-items:center; gap:8px; padding:14px 16px; border-radius:4px; margin-bottom:5px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); transition:background .15s; animation:rowIn .35s cubic-bezier(0.16,1,0.3,1) both; }
 .ranking-row:hover { background:rgba(255,255,255,0.07); }
 .ranking-row.is-me { background:rgba(45,125,210,0.1); border-color:rgba(45,125,210,0.3); }
 @keyframes rowIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
@@ -61,7 +61,7 @@ html,body { min-height:100%; font-family:'Barlow',sans-serif; background:#0a0e1a
 @keyframes dp { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
 
 @media(max-width:480px){
-  .table-header,.ranking-row{grid-template-columns:36px 1fr 60px 60px 50px}
+  .table-header,.ranking-row{grid-template-columns:36px 1fr 80px}
   .rank-stat{font-size:13px}
   .podium-avatar{width:42px;height:42px;font-size:17px}
 }
@@ -92,8 +92,7 @@ html,body { min-height:100%; font-family:'Barlow',sans-serif; background:#0a0e1a
     <div class="table-header">
       <span style="text-align:center">#</span>
       <span>Jugador</span>
-      <span style="text-align:center">⚡ Pts</span>
-      <span style="text-align:center">🎮</span>
+      <span style="text-align:center">🏆 Victorias</span>
     </div>
     <div id="ranking-list">
       <div class="loading">
@@ -184,6 +183,7 @@ function render(players) {
           <span class="rank-name">${p.name}</span>
           ${isMe?'<span class="rank-me">Tú</span>':''}
         </div>
+        <div class="rank-stat rank-wins">${p.wins}</div>
       </div>`;
   }).join('');
 }
