@@ -923,6 +923,7 @@ let categories = [
   { id:'robo',     name:'Robo',      color:'#ff4dff', emoji:'💸', special:true },
   { id:'bomba',    name:'Bomba',     color:'#ff6600', emoji:'💣', special:true },
   { id:'skip',     name:'SKIP',      color:'#00e5ff', emoji:'⏭️', special:true },
+  { id:'suerte',   name:'Suerte',    color:'#00ff88', emoji:'🍀', special:true },
 ];
 
 // ── CATEGORY BACKGROUNDS ─────────────────────────────────────────────────────
@@ -1157,7 +1158,7 @@ function showReveal(cat, diff, special) {
 
   let nameText = cat.name.toUpperCase();
   if (special) {
-    const specialNames = { doble:'⚡ x2 Puntos', robo:'💸 Robo', bomba:'💣 Bomba', skip:'⏭️ SKIP' };
+    const specialNames = { doble:'⚡ x2 Puntos', robo:'💸 Robo', bomba:'💣 Bomba', skip:'⏭️ SKIP', suerte:'🍀 Suerte' };
     nameText = specialNames[special] || cat.name.toUpperCase();
   }
   document.getElementById('cat-reveal-name').textContent = nameText;
@@ -1171,7 +1172,7 @@ function showReveal(cat, diff, special) {
     reveal.appendChild(badge);
   }
   if (special) {
-    const specialDesc = { doble:'Pregunta vale el doble', robo:'Si fallas dan puntos al siguiente', bomba:'Si fallas pierdes puntos', skip:'Turno perdido' };
+    const specialDesc = { doble:'Pregunta vale el doble', robo:'Si aciertas, robas puntos al líder', bomba:'Si fallas pierdes puntos', skip:'Turno perdido', suerte:'+6 puntos gratis 🎉' };
     badge.textContent = specialDesc[special] || '';
     badge.style.background = hexToRgba(cat.color, 0.2);
     badge.style.color = cat.color;
@@ -1416,6 +1417,7 @@ function showScoreboard(room) {
   const isSkip    = la && la.special === 'skip';
   const isCorrect = la && la.correct && !isSkip;
   const diffPtsMap = { easy: 3, medium: 6, hard: 12 };
+  const isSuerte  = la && la.special === 'suerte';
   const basePts = diffPtsMap[room.currentDifficulty] || 6;
   const actualPts = isCorrect ? (room.specialEffect === 'doble' ? basePts * 2 : basePts) : 0;
   const banner = document.getElementById('sb-banner');
@@ -1426,10 +1428,20 @@ function showScoreboard(room) {
     document.getElementById('sb-banner-title').textContent = 'SKIP — Turno perdido';
     document.getElementById('sb-banner-detail').textContent = `${cp ? cp.name : '—'} ha perdido su turno`;
     document.getElementById('sb-banner-pts').style.display = 'none';
+  } else if (isSuerte) {
+    banner.className = 'sb-answer-banner correct';
+    document.getElementById('sb-icon').textContent         = '🍀';
+    document.getElementById('sb-banner-title').textContent = '¡Suerte! +6 puntos';
+    document.getElementById('sb-banner-detail').textContent = `${cp ? cp.name : '—'} ha tenido suerte`;
+    document.getElementById('sb-banner-pts').textContent   = '+6';
+    document.getElementById('sb-banner-pts').style.display = 'block';
   } else {
+    const roboSteal = isCorrect && room.specialEffect === 'robo';
     banner.className = `sb-answer-banner ${isCorrect ? 'correct' : 'wrong'}`;
-    document.getElementById('sb-icon').textContent         = isCorrect ? '+' : '—';
-    document.getElementById('sb-banner-title').textContent = isCorrect ? 'Correcto' : 'Incorrecto';
+    document.getElementById('sb-icon').textContent         = isCorrect ? (roboSteal ? '💸' : '+') : '—';
+    document.getElementById('sb-banner-title').textContent = isCorrect
+      ? (roboSteal ? '¡Robo! Puntos robados al líder' : 'Correcto')
+      : 'Incorrecto';
     document.getElementById('sb-banner-detail').textContent = q ? `Respuesta correcta: ${q.a}` : '—';
     document.getElementById('sb-banner-pts').textContent  = isCorrect ? `+${actualPts}` : '';
     document.getElementById('sb-banner-pts').style.display = isCorrect ? 'block' : 'none';
