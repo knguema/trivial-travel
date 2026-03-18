@@ -726,13 +726,16 @@ html, body {
   <div class="screen" id="screen-room">
 
     <div class="room-header">
-      <span class="room-code-label">Código de sala</span>
-      <div class="room-code" id="room-code-display">——</div>
-      <div id="room-visibility-badge" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;padding:3px 10px;border-radius:3px;"></div>
-      <button class="copy-btn" onclick="copyCode()">
-        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Copiar código
-      </button>
+      <!-- Solo visible en salas privadas -->
+      <div id="room-code-section">
+        <span class="room-code-label">Código de sala</span>
+        <div class="room-code" id="room-code-display">——</div>
+        <button class="copy-btn" onclick="copyCode()">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar código
+        </button>
+      </div>
+      <div id="room-visibility-badge" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;padding:6px 16px;border-radius:4px;"></div>
     </div>
 
     <div class="status-bar">
@@ -865,6 +868,18 @@ function initSocket(callback) {
 
   socket.on('room:update', (room) => {
     players = room.players;
+    // Sync visibility from server (important for players who joined)
+    if (typeof room.isPublic !== 'undefined') {
+      isPublicRoom = room.isPublic;
+      // Update badge if room is already showing
+      const codeSection = document.getElementById('room-code-section');
+      const badge = document.getElementById('room-visibility-badge');
+      if (codeSection && badge) {
+        codeSection.style.display = isPublicRoom ? 'none' : 'block';
+        badge.textContent = isPublicRoom ? '🌍 Sala Pública' : '🔒 Sala Privada';
+        badge.style.color = isPublicRoom ? '#2d7dd2' : '#8892b0';
+      }
+    }
     renderPlayers(room);
     updateStartBtn(room);
   });
@@ -972,17 +987,25 @@ function showRoom(code) {
   const display = document.getElementById('room-code-display');
   display.innerHTML = code;
 
-  // Show visibility badge
+  // Show code section only for private rooms
+  const codeSection = document.getElementById('room-code-section');
   const badge = document.getElementById('room-visibility-badge');
-  if (badge) {
-    if (isPublicRoom) {
-      badge.textContent = '🌍 Pública';
+
+  if (isPublicRoom) {
+    if (codeSection) codeSection.style.display = 'none';
+    if (badge) {
+      badge.textContent = '🌍 Sala Pública';
       badge.style.background = 'rgba(45,125,210,0.15)';
       badge.style.color = '#2d7dd2';
-    } else {
-      badge.textContent = '🔒 Privada';
+      badge.style.border = '1px solid rgba(45,125,210,0.3)';
+    }
+  } else {
+    if (codeSection) codeSection.style.display = 'block';
+    if (badge) {
+      badge.textContent = '🔒 Sala Privada';
       badge.style.background = 'rgba(255,255,255,0.05)';
       badge.style.color = '#8892b0';
+      badge.style.border = '1px solid #1e2d50';
     }
   }
 
