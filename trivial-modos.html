@@ -353,6 +353,30 @@ html, body {
 
     <!-- RANKING -->
     <div class="mode-card" onclick="selectMode('ranking')" style="grid-column:1/-1; padding:20px 28px;">
+      <div class="icon-box" style="width:40px;height:40px">
+        <span style="font-size:20px">🏆</span>
+      </div>
+      <div>
+        <div class="mode-title" style="font-size:18px">Ranking Global</div>
+        <div class="mode-desc">Los mejores jugadores de todas las partidas</div>
+      </div>
+      <div class="mode-arrow">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
+
+    <div class="mode-card" onclick="selectMode('eventos')" style="grid-column:1/-1; padding:20px 28px;">
+      <div class="icon-box" style="width:40px;height:40px">
+        <span style="font-size:20px">🎉</span>
+      </div>
+      <div>
+        <div class="mode-title" style="font-size:18px">Eventos Especiales</div>
+        <div class="mode-desc">Participa en eventos con preguntas exclusivas</div>
+      </div>
+      <div class="mode-arrow">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
       <div style="display:flex;align-items:center;gap:16px;width:100%">
         <div class="icon-box">
           <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round">
@@ -401,6 +425,8 @@ function selectMode(mode) {
     window.location.href = 'trivial-admin.html';
   } else if (mode === 'ranking') {
     window.location.href = 'trivial-ranking.html';
+  } else if (mode === 'eventos') {
+    window.location.href = 'trivial-eventos.html';
   }
 }
 
