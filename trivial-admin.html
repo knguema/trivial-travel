@@ -395,11 +395,81 @@ html, body {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Jugadores
       </div>
+      <div class="nav-item" onclick="showPage('events')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Eventos
+      </div>
     </div>
   </div>
 
   <!-- MAIN -->
   <div class="main">
+
+    <!-- EVENTS -->
+    <div class="page" id="page-events">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Eventos</div>
+          <div class="page-sub">Gestiona los eventos especiales con preguntas exclusivas</div>
+        </div>
+        <button class="btn btn-primary" onclick="showCreateEventModal()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Crear evento
+        </button>
+      </div>
+      <div id="events-list" style="display:grid;gap:12px"></div>
+    </div>
+
+    <!-- EVENT MODAL -->
+    <div id="event-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:24px">
+      <div style="background:#0d1535;border:1px solid #1e2d50;border-radius:8px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;padding:28px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 id="event-modal-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:#fff">Crear Evento</h3>
+          <button onclick="closeEventModal()" style="background:none;border:none;color:#8892b0;cursor:pointer;font-size:20px">✕</button>
+        </div>
+        <div class="field"><label>Título</label><input type="text" id="ev-title" placeholder="Nombre del evento"></div>
+        <div class="field"><label>Descripción</label><textarea id="ev-desc" rows="2" placeholder="Descripción breve"></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label>Categoría</label>
+            <select id="ev-category">
+              <option value="sports">Sports</option>
+              <option value="geo">Geography</option>
+              <option value="culture">Culture</option>
+              <option value="history">History</option>
+              <option value="eu">EU</option>
+              <option value="kenya">Kenya</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="field"><label>Estado</label>
+            <select id="ev-status">
+              <option value="active">Activo</option>
+              <option value="upcoming">Próximo</option>
+              <option value="finished">Finalizado</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="field"><label>Rondas</label><input type="number" id="ev-rounds" value="6" min="1" max="20"></div>
+          <div class="field"><label>Inicio (opcional)</label><input type="datetime-local" id="ev-starts"></div>
+          <div class="field"><label>Fin (opcional)</label><input type="datetime-local" id="ev-ends"></div>
+        </div>
+
+        <!-- Questions -->
+        <div style="border-top:1px solid #1e2d50;margin:16px 0;padding-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#8892b0">Preguntas</span>
+            <button onclick="addEventQuestion()" style="background:rgba(45,125,210,0.15);border:1px solid rgba(45,125,210,0.3);border-radius:3px;padding:5px 12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2d7dd2;cursor:pointer">+ Añadir</button>
+          </div>
+          <div id="ev-questions-list" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:20px">
+          <button onclick="closeEventModal()" style="flex:1;padding:12px;background:transparent;border:1.5px solid #1e2d50;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#8892b0">Cancelar</button>
+          <button onclick="saveEvent()" style="flex:2;padding:12px;background:#2d7dd2;border:none;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#fff">Guardar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- USERS -->
     <div class="page" id="page-users">
@@ -851,6 +921,131 @@ async function loadUsers() {
   }
 }
 
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+let editingEventId = null;
+
+async function loadEvents() {
+  try {
+    const r = await fetch(`${SERVER}/api/events`);
+    const events = await r.json();
+    const el = document.getElementById('events-list');
+    if (!events.length) {
+      el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">No hay eventos todavía. Crea el primero.</div>`;
+      return;
+    }
+    const statusLabel = { active:'Activo', upcoming:'Próximo', finished:'Finalizado' };
+    const statusColor = { active:'#18c25a', upcoming:'#2d7dd2', finished:'#8892b0' };
+    el.innerHTML = events.map(ev => `
+      <div style="background:#0d1535;border:1px solid #1e2d50;border-radius:6px;padding:18px 20px;display:flex;align-items:center;gap:16px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:#fff">${ev.title}</span>
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:2px;background:rgba(0,0,0,0.3);color:${statusColor[ev.status]||'#8892b0'}">${statusLabel[ev.status]||ev.status}</span>
+          </div>
+          <div style="font-size:12px;color:#8892b0">${ev.category} · ${ev.rounds} rondas${ev.description ? ' · '+ev.description.slice(0,60) : ''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button onclick="editEvent(${ev.id})" style="padding:7px 14px;background:rgba(45,125,210,0.15);border:1px solid rgba(45,125,210,0.3);border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2d7dd2;cursor:pointer">Editar</button>
+          <button onclick="deleteEvent(${ev.id})" style="padding:7px 14px;background:rgba(232,69,69,0.1);border:1px solid rgba(232,69,69,0.2);border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e84545;cursor:pointer">Borrar</button>
+        </div>
+      </div>
+    `).join('');
+  } catch {
+    document.getElementById('events-list').innerHTML = `<div style="padding:20px;color:var(--muted)">Error al cargar eventos</div>`;
+  }
+}
+
+function showCreateEventModal() {
+  editingEventId = null;
+  document.getElementById('event-modal-title').textContent = 'Crear Evento';
+  document.getElementById('ev-title').value = '';
+  document.getElementById('ev-desc').value = '';
+  document.getElementById('ev-rounds').value = 6;
+  document.getElementById('ev-starts').value = '';
+  document.getElementById('ev-ends').value = '';
+  document.getElementById('ev-questions-list').innerHTML = '';
+  document.getElementById('event-modal').style.display = 'flex';
+}
+
+async function editEvent(id) {
+  try {
+    const r = await fetch(`${SERVER}/api/events/${id}`);
+    const ev = await r.json();
+    editingEventId = id;
+    document.getElementById('event-modal-title').textContent = 'Editar Evento';
+    document.getElementById('ev-title').value = ev.title;
+    document.getElementById('ev-desc').value = ev.description || '';
+    document.getElementById('ev-category').value = ev.category;
+    document.getElementById('ev-status').value = ev.status;
+    document.getElementById('ev-rounds').value = ev.rounds;
+    document.getElementById('ev-starts').value = ev.starts_at ? ev.starts_at.slice(0,16) : '';
+    document.getElementById('ev-ends').value = ev.ends_at ? ev.ends_at.slice(0,16) : '';
+    document.getElementById('ev-questions-list').innerHTML = '';
+    (ev.questions || []).forEach(q => addEventQuestion(q));
+    document.getElementById('event-modal').style.display = 'flex';
+  } catch { alert('Error al cargar evento'); }
+}
+
+function closeEventModal() {
+  document.getElementById('event-modal').style.display = 'none';
+}
+
+let evQCount = 0;
+function addEventQuestion(q = null) {
+  const id = evQCount++;
+  const div = document.createElement('div');
+  div.style.cssText = 'background:rgba(0,0,0,0.2);border:1px solid #1e2d50;border-radius:4px;padding:14px';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8892b0">Pregunta ${id+1}</span>
+      <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:#e84545;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <input type="text" id="evq-q-${id}" placeholder="Pregunta" value="${q ? q.question.replace(/"/g,'&quot;') : ''}" style="width:100%;padding:10px;background:#0a0e1a;border:1px solid #1e2d50;border-radius:3px;color:#e8eaf6;font-size:13px;margin-bottom:8px">
+    <input type="text" id="evq-a-${id}" placeholder="Respuesta correcta" value="${q ? q.answer.replace(/"/g,'&quot;') : ''}" style="width:100%;padding:10px;background:#0a0e1a;border:1px solid #18c25a;border-radius:3px;color:#18c25a;font-size:13px;margin-bottom:8px">
+    <input type="text" id="evq-o-${id}" placeholder="Opciones separadas por | (ej: Opción A|Opción B|Opción C)" value="${q ? JSON.stringify(q.options).slice(1,-1).replace(/"/g,'').replace(/,/g,'|') : ''}" style="width:100%;padding:10px;background:#0a0e1a;border:1px solid #1e2d50;border-radius:3px;color:#e8eaf6;font-size:13px">
+  `;
+  document.getElementById('ev-questions-list').appendChild(div);
+}
+
+async function saveEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  if (!title) return alert('Introduce un título');
+  const questions = [];
+  document.getElementById('ev-questions-list').querySelectorAll('input[id^="evq-q-"]').forEach(inp => {
+    const id = inp.id.replace('evq-q-','');
+    const q = inp.value.trim();
+    const a = document.getElementById(`evq-a-${id}`)?.value.trim();
+    const opts = document.getElementById(`evq-o-${id}`)?.value.split('|').map(s=>s.trim()).filter(Boolean);
+    if (q && a && opts?.length) questions.push({ question:q, answer:a, options:opts });
+  });
+  const body = {
+    title,
+    description: document.getElementById('ev-desc').value.trim(),
+    category: document.getElementById('ev-category').value,
+    status: document.getElementById('ev-status').value,
+    rounds: parseInt(document.getElementById('ev-rounds').value) || 6,
+    starts_at: document.getElementById('ev-starts').value || null,
+    ends_at: document.getElementById('ev-ends').value || null,
+    questions,
+  };
+  try {
+    const url = editingEventId ? `${SERVER}/api/events/${editingEventId}` : `${SERVER}/api/events`;
+    const method = editingEventId ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await r.json();
+    if (res.ok) { closeEventModal(); loadEvents(); }
+    else alert('Error: ' + res.msg);
+  } catch { alert('Error al guardar'); }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('¿Borrar este evento?')) return;
+  try {
+    await fetch(`${SERVER}/api/events/${id}`, { method: 'DELETE' });
+    loadEvents();
+  } catch { alert('Error al borrar'); }
+}
+
 // ── START ─────────────────────────────────────────────────────────────────────
 // Check admin role
 const _role = sessionStorage.getItem('player_role');
@@ -859,6 +1054,7 @@ if (_role !== 'admin') {
 } else {
   loadData();
   loadUsers();
+  loadEvents();
 }
 </script>
 
