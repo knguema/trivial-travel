@@ -630,8 +630,40 @@ html, body {
 }
 .btn-leave:hover { background: #0d12355f5; }
 </style>
+<link rel="stylesheet" href="navbar.css">
 </head>
 <body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a class="navbar-logo" href="trivial-intro.html">
+      <img class="logo-main" src="logo-trivial.png" alt="Trivial Travel" style="height:34px;border-radius:50%">
+    </a>
+    <ul class="navbar-links">
+      <li><a href="trivial-modos.html">Jugar</a></li>
+      <li><a href="trivial-ranking.html">Ranking</a></li>
+      <li><a href="trivial-eventos.html">Eventos</a></li>
+      <li id="dd-admin" style="display:none">
+        <button onclick="toggleDropdown('dd-admin')">Admin <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <ul class="navbar-dropdown"><li><a href="trivial-admin.html">📊 Panel Admin</a></li></ul>
+      </li>
+    </ul>
+    <div class="navbar-right" id="navbar-right"></div>
+    <button class="navbar-burger" onclick="toggleMobile()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+<div class="navbar-mobile" id="navbar-mobile">
+  <a href="trivial-modos.html">Jugar</a>
+  <a href="trivial-ranking.html">Ranking</a>
+  <a href="trivial-eventos.html">Eventos</a>
+  <div class="mobile-divider"></div>
+  <a href="trivial-login.html" id="mobile-login">Iniciar sesión</a>
+  <a href="trivial-admin.html" id="mobile-admin" style="display:none">Panel Admin</a>
+</div>
+
 
 <a class="btn-back" href="trivial-modos.html">
   <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -1103,5 +1135,7 @@ document.getElementById('join-code').addEventListener('input', function() {
 });
 </script>
 
+<script src="utils.js"></script>
+<script src="navbar.js"></script>
 </body>
 </html>
