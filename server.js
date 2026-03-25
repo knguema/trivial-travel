@@ -795,6 +795,44 @@ async function initDB() {
       VALUES ('admin', 'Admin', 'admin1234', 'admin')
     `);
 
+    // ── Events tables ──
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        category VARCHAR(100) NOT NULL,
+        difficulty VARCHAR(20) NOT NULL DEFAULT 'medio',
+        status VARCHAR(20) NOT NULL DEFAULT 'active',
+        rounds INT NOT NULL DEFAULT 6,
+        starts_at DATETIME,
+        ends_at DATETIME,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS event_questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        question TEXT NOT NULL,
+        answer VARCHAR(500) NOT NULL,
+        options TEXT NOT NULL,
+        difficulty VARCHAR(20) NOT NULL DEFAULT 'medio',
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Auto-cleanup expired events every hour
+    async function cleanupExpiredEvents() {
+      try {
+        const [r] = await db.execute('DELETE FROM events WHERE ends_at IS NOT NULL AND ends_at < DATE_SUB(NOW(), INTERVAL 1 DAY)');
+        if (r.affectedRows > 0) console.log(`🗑️  Cleaned ${r.affectedRows} expired event(s)`);
+      } catch(e) {}
+    }
+    cleanupExpiredEvents();
+    setInterval(cleanupExpiredEvents, 60 * 60 * 1000);
+
     console.log('✅ MySQL connected and tables ready');
   } catch(e) {
     console.error('❌ MySQL error:', e.message);
@@ -880,6 +918,78 @@ async function updateUserStats(playerName, points, isWinner) {
     );
   } catch(e) { console.error('Stats update error:', e.message); }
 }
+
+// ─── Events API ──────────────────────────────────────────────────────────────
+app.get('/api/events', async (req, res) => {
+  if (!db) return res.json([]);
+  try {
+    const [rows] = await db.execute('SELECT * FROM events ORDER BY created_at DESC');
+    res.json(rows);
+  } catch(e) { res.json([]); }
+});
+
+app.get('/api/events/:id', async (req, res) => {
+  if (!db) return res.json(null);
+  try {
+    const [evRows] = await db.execute('SELECT * FROM events WHERE id = ?', [req.params.id]);
+    if (!evRows.length) return res.status(404).json({ ok: false, msg: 'Event not found' });
+    const event = evRows[0];
+    const [qRows] = await db.execute('SELECT * FROM event_questions WHERE event_id = ? ORDER BY id', [req.params.id]);
+    event.questions = qRows.map(q => ({ ...q, options: JSON.parse(q.options) }));
+    res.json(event);
+  } catch(e) { res.status(500).json({ ok: false, msg: e.message }); }
+});
+
+app.post('/api/events', async (req, res) => {
+  if (!db) return res.json({ ok: false, msg: 'No database' });
+  const { title, description, category, difficulty, status, rounds, starts_at, ends_at, questions } = req.body;
+  if (!title || !category) return res.json({ ok: false, msg: 'Missing required fields' });
+  try {
+    const [result] = await db.execute(
+      'INSERT INTO events (title, description, category, difficulty, status, rounds, starts_at, ends_at) VALUES (?,?,?,?,?,?,?,?)',
+      [title, description||'', category, difficulty||'medio', status||'active', rounds||6, starts_at||null, ends_at||null]
+    );
+    const eventId = result.insertId;
+    if (questions && questions.length) {
+      for (const q of questions) {
+        await db.execute(
+          'INSERT INTO event_questions (event_id, question, answer, options, difficulty) VALUES (?,?,?,?,?)',
+          [eventId, q.question, q.answer, JSON.stringify(q.options), q.difficulty||difficulty||'medio']
+        );
+      }
+    }
+    res.json({ ok: true, id: eventId });
+  } catch(e) { res.json({ ok: false, msg: e.message }); }
+});
+
+app.put('/api/events/:id', async (req, res) => {
+  if (!db) return res.json({ ok: false, msg: 'No database' });
+  const { title, description, category, difficulty, status, rounds, starts_at, ends_at, questions } = req.body;
+  try {
+    await db.execute(
+      'UPDATE events SET title=?, description=?, category=?, difficulty=?, status=?, rounds=?, starts_at=?, ends_at=? WHERE id=?',
+      [title, description||'', category, difficulty||'medio', status||'active', rounds||6, starts_at||null, ends_at||null, req.params.id]
+    );
+    await db.execute('DELETE FROM event_questions WHERE event_id = ?', [req.params.id]);
+    if (questions && questions.length) {
+      for (const q of questions) {
+        await db.execute(
+          'INSERT INTO event_questions (event_id, question, answer, options, difficulty) VALUES (?,?,?,?,?)',
+          [req.params.id, q.question, q.answer, JSON.stringify(q.options), q.difficulty||difficulty||'medio']
+        );
+      }
+    }
+    res.json({ ok: true });
+  } catch(e) { res.json({ ok: false, msg: e.message }); }
+});
+
+app.delete('/api/events/:id', async (req, res) => {
+  if (!db) return res.json({ ok: false, msg: 'No database' });
+  try {
+    await db.execute('DELETE FROM events WHERE id = ?', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.json({ ok: false, msg: e.message }); }
+});
 
 app.get('/api/tenant/:id', (req, res) => {
   res.json(getTenantData(req.params.id));
