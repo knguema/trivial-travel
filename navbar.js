@@ -47,11 +47,9 @@ function initNavbar() {
     if (mobileLogin) mobileLogin.style.display = 'none';
   } else if (name === 'Invitado') {
     right.innerHTML = `
-      <div class="navbar-user-info">
-        <div class="navbar-avatar" style="background:#aaa">?</div>
-        <span>Invitado</span>
-      </div>
-      <a class="navbar-btn navbar-btn-primary" href="trivial-login.html">Registrarse</a>
+      <a class="navbar-btn navbar-btn-primary" href="trivial-login.html" style="display:flex;align-items:center;gap:6px;font-weight:600;animation:pulse 2s ease-in-out infinite">
+        ✨ Crear cuenta gratis
+      </a>
     `;
   } else {
     right.innerHTML = `
