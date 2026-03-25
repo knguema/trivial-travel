@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivial — Eventos</title>
+<link rel="icon" type="image/png" href="logo-trivial.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="navbar.css">
+<style>
+/* ── EVENTOS PAGE ── */
+body { background: #f4f6fb; }
+
+.eventos-hero {
+  background: linear-gradient(135deg, #0d1130 0%, #1a2050 50%, #0d1130 100%);
+  padding: 64px 32px 48px; text-align: center; position: relative; overflow: hidden;
+}
+.eventos-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 60% 40%, rgba(45,125,210,0.2) 0%, transparent 65%);
+  pointer-events: none;
+}
+.eventos-hero-inner { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; }
+.eventos-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+  letter-spacing: 4px; text-transform: uppercase; color: #2d7dd2; margin-bottom: 14px; display: block;
+}
+.eventos-hero h1 {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+  font-size: clamp(40px, 7vw, 64px); text-transform: uppercase;
+  letter-spacing: -1px; color: #fff; line-height: 1; margin-bottom: 14px;
+}
+.eventos-hero p { font-size: 15px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+/* ── FILTERS ── */
+.eventos-filters {
+  background: #fff; border-bottom: 1px solid #e8eaed;
+  position: sticky; top: 54px; z-index: 10;
+}
+.eventos-filters-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 32px;
+  display: flex; gap: 4px; align-items: center; height: 52px;
+}
+.filter-btn {
+  padding: 7px 20px; border-radius: 50px; border: 1.5px solid #e0e0e0;
+  background: transparent; cursor: pointer;
+  font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 500;
+  color: #555; transition: all .18s;
+}
+.filter-btn:hover  { border-color: #2d7dd2; color: #2d7dd2; }
+.filter-btn.active { background: #2d7dd2; border-color: #2d7dd2; color: #fff; }
+
+/* ── GRID ── */
+.eventos-page { max-width: 1200px; margin: 0 auto; padding: 40px 32px 64px; }
+.eventos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+.eventos-loading { grid-column: 1/-1; text-align: center; padding: 64px; color: rgba(0,0,0,0.3); font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.eventos-empty { grid-column: 1/-1; text-align: center; padding: 80px 24px; color: rgba(0,0,0,0.35); font-size: 15px; line-height: 1.7; }
+.eventos-empty svg { width: 48px; height: 48px; stroke: rgba(0,0,0,0.15); fill: none; stroke-width: 1.5; margin: 0 auto 16px; display: block; }
+
+/* ── EVENT CARD ── */
+.event-card {
+  background: #fff; border: 1.5px solid #e8eaed; border-radius: 12px;
+  overflow: hidden; cursor: default;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  animation: rise .35s cubic-bezier(0.16,1,0.3,1) both;
+}
+.event-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); border-color: #2d7dd2; }
+.event-card-band { height: 5px; }
+.event-card-body { padding: 22px 24px 20px; }
+.event-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.event-status { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; flex-shrink: 0; }
+.event-status.active   { background: rgba(24,194,90,0.12); color: #16a34a; }
+.event-status.upcoming { background: rgba(45,125,210,0.12); color: #2d7dd2; }
+.event-status.finished { background: rgba(0,0,0,0.07); color: #888; }
+.event-category { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: rgba(0,0,0,0.35); }
+.event-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.3px; color: #111; line-height: 1.15; margin-bottom: 8px; }
+.event-desc { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.event-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid #f0f0f0; }
+.event-meta { display: flex; gap: 14px; }
+.event-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #888; }
+.event-meta-item svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.event-join-btn {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+  background: #2d7dd2; color: #fff; border: none; border-radius: 6px; padding: 9px 18px;
+  cursor: pointer; transition: all .18s; box-shadow: 0 4px 14px rgba(45,125,210,0.3);
+}
+.event-join-btn:hover { background: #1a6ab8; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,125,210,0.4); }
+.event-join-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.event-join-btn:hover svg { transform: translateX(3px); }
+.event-btn { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; color: #2d7dd2; background: none; border: none; cursor: pointer; transition: gap .15s; }
+.event-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── MODAL ── */
+.ev-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 500; align-items: center; justify-content: center; padding: 24px; }
+.ev-modal-overlay.show { display: flex; }
+.ev-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 600px; max-height: 88vh; overflow-y: auto; position: relative; animation: modalIn .3s cubic-bezier(0.16,1,0.3,1) both; box-shadow: 0 24px 64px rgba(0,0,0,0.15); }
+@keyframes modalIn { from{opacity:0;transform:scale(0.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.ev-modal-close { position: absolute; top: 16px; right: 16px; z-index: 10; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.06); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.ev-modal-close:hover { background: rgba(0,0,0,0.12); }
+.ev-modal-close svg { width: 16px; height: 16px; stroke: #333; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.ev-modal-band { height: 6px; border-radius: 16px 16px 0 0; }
+.ev-modal-content { padding: 28px 32px 32px; }
+.ev-modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 30px; color: #111; line-height: 1.1; margin-bottom: 10px; }
+.ev-modal-desc { font-size: 14px; color: #555; line-height: 1.7; }
+.ev-modal-badges { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 24px; }
+.ev-modal-badge { padding: 5px 14px; border-radius: 50px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+
+@media (max-width: 600px) {
+  .eventos-hero { padding: 48px 20px 36px; }
+  .eventos-page { padding: 24px 16px 48px; }
+  .eventos-grid { grid-template-columns: 1fr; gap: 16px; }
+  .eventos-filters-inner { padding: 0 16px; overflow-x: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a class="navbar-logo" href="trivial-intro.html">
+      <img class="logo-main" src="logo-trivial.png" alt="Trivial Travel" style="height:34px;border-radius:50%">
+    </a>
+    <ul class="navbar-links">
+      <li><a href="trivial-modos.html">Jugar</a></li>
+      <li><a href="trivial-ranking.html">Ranking</a></li>
+      <li><a href="trivial-eventos.html" class="active">Eventos</a></li>
+      <li id="dd-admin" style="display:none">
+        <button onclick="toggleDropdown('dd-admin')">Admin <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <ul class="navbar-dropdown"><li><a href="trivial-admin.html">📊 Panel Admin</a></li></ul>
+      </li>
+    </ul>
+    <div class="navbar-right" id="navbar-right"></div>
+    <button class="navbar-burger" onclick="toggleMobile()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+<div class="navbar-mobile" id="navbar-mobile">
+  <a href="trivial-modos.html">Jugar</a>
+  <a href="trivial-ranking.html">Ranking</a>
+  <a href="trivial-eventos.html">Eventos</a>
+  <div class="mobile-divider"></div>
+  <a href="trivial-login.html" id="mobile-login">Iniciar sesión</a>
+  <a href="trivial-admin.html" id="mobile-admin" style="display:none">Panel Admin</a>
+</div>
+
+<!-- HERO -->
+<div class="eventos-hero">
+  <div class="eventos-hero-inner">
+    <span class="eventos-eyebrow">Trivial Travel</span>
+    <h1>Eventos</h1>
+    <p>Participa en eventos especiales con preguntas exclusivas</p>
+  </div>
+</div>
+
+<!-- FILTROS -->
+<div class="eventos-filters">
+  <div class="eventos-filters-inner">
+    <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
+    <button class="filter-btn" onclick="setFilter('active', this)">Activos</button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)">Próximos</button>
+    <button class="filter-btn" onclick="setFilter('finished', this)">Finalizados</button>
+  </div>
+</div>
+
+<!-- EVENTOS -->
+<div class="eventos-page">
+  <div class="eventos-grid" id="eventos-grid">
+    <div class="eventos-loading">
+      <div class="dots"><span></span><span></span><span></span></div>
+      Cargando eventos...
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="ev-modal-overlay" id="ev-modal">
+  <div class="ev-modal">
+    <button class="ev-modal-close" onclick="closeEventModal()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="ev-modal-body" id="ev-modal-body"></div>
+  </div>
+</div>
+
+<script src="utils.js"></script>
+<script src="navbar.js"></script>
+<script>
+const CAT_COLORS = {
+  sports:'#18c25a', geo:'#3B9EFF', culture:'#f5a623',
+  history:'#e84545', eu:'#a259ff', kenya:'#cc2200', mixed:'#9b59b6',
+};
+
+let allEvents = [];
+let currentFilter = 'all';
+
+window.addEventListener('DOMContentLoaded', loadEvents);
+
+async function loadEvents() {
+  try {
+    allEvents = await apiGet('/api/events');
+    renderEvents();
+  } catch {
+    document.getElementById('eventos-grid').innerHTML =
+      '<div class="eventos-empty"><p>No se pudieron cargar los eventos.</p></div>';
+  }
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+function getEventStatus(ev) {
+  const now = new Date();
+  if (!ev.starts_at && !ev.ends_at) return ev.status || 'active';
+  if (ev.ends_at && new Date(ev.ends_at) < now) return 'finished';
+  if (ev.starts_at && new Date(ev.starts_at) > now) return 'upcoming';
+  return 'active';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function renderEvents() {
+  const grid = document.getElementById('eventos-grid');
+  let filtered = currentFilter === 'all' ? allEvents : allEvents.filter(ev => getEventStatus(ev) === currentFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="eventos-empty">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No hay eventos ${currentFilter !== 'all' ? 'en esta categoría' : 'disponibles'}.<br>¡Vuelve pronto!</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((ev, i) => {
+    const status = getEventStatus(ev);
+    const color  = CAT_COLORS[ev.category] || '#2d7dd2';
+    const statusLabel = { active:'Activo', upcoming:'Próximo', finished:'Finalizado' }[status];
+    const canJoin = status === 'active';
+
+    return `
+      <div class="event-card" style="animation-delay:${i*0.05}s">
+        <div class="event-card-band" style="background:${color}"></div>
+        <div class="event-card-body">
+          <div class="event-card-top">
+            <span class="event-category">${ev.category}</span>
+            <span class="event-status ${status}">${statusLabel}</span>
+          </div>
+          <div class="event-title">${ev.title}</div>
+          <div class="event-desc">${ev.description || 'Sin descripción'}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:3px;background:rgba(0,0,0,0.06);color:#555">🎡 Ruleta</span>
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:3px;background:rgba(0,0,0,0.06);color:#555">${ev.rounds || 6} rondas</span>
+          </div>
+          <div class="event-card-footer">
+            <div class="event-meta">
+              ${ev.starts_at ? `<div class="event-meta-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${formatDate(ev.starts_at)}</div>` : ''}
+            </div>
+            ${canJoin
+              ? `<button class="event-join-btn" onclick="joinEvent(${ev.id},'${encodeURIComponent(ev.title)}','${ev.category}',${ev.rounds||6})">
+                  🎮 Unirse
+                  <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>`
+              : `<button class="event-btn" onclick="openEventInfoModal(${ev.id})">
+                  Ver
+                  <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>`
+            }
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function joinEvent(eventId, title, category, rounds) {
+  const name = Session.playerName();
+  if (!name || name === 'Invitado') {
+    showJoinModal(eventId, title, category, rounds);
+    return;
+  }
+  goTo(`trivial-evento-juego.html?event=${eventId}&player=${encodeURIComponent(name)}&title=${title}&cat=${category}&rounds=${rounds}`);
+}
+
+function showJoinModal(eventId, title, category, rounds) {
+  const modal = document.getElementById('ev-modal');
+  const body  = document.getElementById('ev-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = `
+    <div style="padding:28px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;color:#111;margin-bottom:6px;text-transform:uppercase">${decodeURIComponent(title)}</div>
+      <p style="font-size:14px;color:#666;margin-bottom:20px">Introduce tu nombre para unirte al evento.</p>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;color:#333">Tu nombre</label>
+        <input type="text" id="join-name-input" placeholder="Tu nombre en el juego" maxlength="20"
+          style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:4px;font-size:15px;outline:none"
+          onkeydown="if(event.key==='Enter') confirmJoin(${eventId},'${title}','${category}',${rounds})">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEventModal()" style="flex:1;padding:12px;background:transparent;border:1.5px solid #e0e0e0;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#888">Cancelar</button>
+        <button onclick="confirmJoin(${eventId},'${title}','${category}',${rounds})" style="flex:2;padding:12px;background:#2d7dd2;border:none;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:#fff">Unirse</button>
+      </div>
+    </div>`;
+  setTimeout(() => { const inp = document.getElementById('join-name-input'); if(inp) inp.focus(); }, 100);
+}
+
+function confirmJoin(eventId, title, category, rounds) {
+  const inp = document.getElementById('join-name-input');
+  const name = inp ? inp.value.trim() : '';
+  if (!name) { if(inp) inp.focus(); return; }
+  closeEventModal();
+  goTo(`trivial-evento-juego.html?event=${eventId}&player=${encodeURIComponent(name)}&title=${encodeURIComponent(decodeURIComponent(title))}&cat=${category}&rounds=${rounds}`);
+}
+
+async function openEventInfoModal(id) {
+  const modal = document.getElementById('ev-modal');
+  const body  = document.getElementById('ev-modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div style="padding:60px;text-align:center;color:#999">Cargando...</div>';
+  try {
+    const ev = await apiGet(`/api/events/${id}`);
+    const color = CAT_COLORS[ev.category] || '#2d7dd2';
+    const status = getEventStatus(ev);
+    const statusLabel = { active:'Activo', upcoming:'Próximo', finished:'Finalizado' }[status];
+    body.innerHTML = `
+      <div class="ev-modal-band" style="background:${color}"></div>
+      <div class="ev-modal-content">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(0,0,0,0.4);margin-bottom:8px">${ev.category}</div>
+        <div class="ev-modal-title">${ev.title}</div>
+        <div class="ev-modal-desc">${ev.description || ''}</div>
+        <div class="ev-modal-badges">
+          <span class="ev-modal-badge event-status ${status}">${statusLabel}</span>
+          <span class="ev-modal-badge" style="background:rgba(45,125,210,0.08);color:#2d7dd2;padding:5px 14px;border-radius:50px">🎡 Ruleta · ${ev.rounds||6} rondas</span>
+        </div>
+        ${ev.starts_at||ev.ends_at ? `
+        <div style="display:flex;gap:24px;padding:16px 20px;background:#f8f9fa;border-radius:10px">
+          ${ev.starts_at?`<div><div style="font-size:11px;color:#999;text-transform:uppercase">Inicio</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:#222">${formatDate(ev.starts_at)}</div></div>`:''}
+          ${ev.ends_at?`<div><div style="font-size:11px;color:#999;text-transform:uppercase">Fin</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:#222">${formatDate(ev.ends_at)}</div></div>`:''}
+        </div>` : ''}
+      </div>`;
+  } catch {
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:#999">Error al cargar.</div>';
+  }
+}
+
+function closeEventModal() {
+  document.getElementById('ev-modal').classList.remove('show');
+}
+
+document.getElementById('ev-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('ev-modal')) closeEventModal();
+});
+</script>
+</body>
+</html>
