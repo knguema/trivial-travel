@@ -348,6 +348,115 @@ html, body {
 .mini-score-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
 .mini-score-pts { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:13px; color:var(--green); }
 
+/* ── REMATCH ── */
+#btn-rematch { background: #f5a623; }
+#btn-rematch:hover { background: #e09010; }
+
+/* ── CHAT PANEL ── */
+.chat-panel {
+  position: fixed;
+  bottom: 0; right: 20px;
+  width: 300px;
+  background: #0d1535;
+  border: 1px solid #1e2d50;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  z-index: 100;
+  display: flex; flex-direction: column;
+  transition: transform .3s cubic-bezier(0.16,1,0.3,1);
+  max-height: 420px;
+}
+.chat-panel.collapsed { transform: translateY(calc(100% - 42px)); }
+
+.chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; cursor: pointer;
+  border-bottom: 1px solid #1e2d50;
+}
+.chat-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 1px; color: #e8eaf6;
+}
+.chat-toggle {
+  background: none; border: none; color: #8892b0;
+  cursor: pointer; font-size: 12px; padding: 2px 6px;
+  transition: transform .2s;
+}
+.chat-panel:not(.collapsed) .chat-toggle { transform: rotate(180deg); }
+
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 200px;
+}
+.chat-msg { display: flex; flex-direction: column; gap: 2px; }
+.chat-msg-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: #8892b0;
+}
+.chat-msg-name.me { color: #2d7dd2; }
+.chat-msg-text {
+  font-size: 13px; color: #e8eaf6;
+  background: rgba(255,255,255,0.05);
+  border-radius: 0 8px 8px 8px;
+  padding: 6px 10px; max-width: 230px; word-break: break-word;
+}
+.chat-msg.is-me .chat-msg-text {
+  background: rgba(45,125,210,0.2);
+  border-radius: 8px 0 8px 8px;
+  align-self: flex-end;
+}
+.chat-msg.is-me { align-items: flex-end; }
+.chat-msg.system .chat-msg-text {
+  background: none; color: #8892b0;
+  font-style: italic; font-size: 12px;
+  border-radius: 0; padding: 2px 0;
+}
+
+.chat-input-wrap {
+  display: flex; gap: 6px; padding: 8px 12px;
+  border-top: 1px solid #1e2d50;
+}
+.chat-input-wrap input {
+  flex: 1; background: rgba(255,255,255,0.05);
+  border: 1px solid #1e2d50; border-radius: 4px;
+  padding: 7px 10px; color: #e8eaf6; font-size: 13px; outline: none;
+}
+.chat-input-wrap input:focus { border-color: #2d7dd2; }
+.chat-input-wrap button {
+  background: #2d7dd2; border: none; border-radius: 4px;
+  color: #fff; padding: 7px 12px; cursor: pointer;
+  font-size: 14px; transition: background .15s;
+}
+.chat-input-wrap button:hover { background: #1a6ab8; }
+
+/* ── CHAT FAB (floating button when collapsed) ── */
+.chat-fab {
+  display: none;
+  position: fixed; bottom: 20px; right: 20px;
+  background: #2d7dd2; color: #fff;
+  border: none; border-radius: 50px;
+  padding: 10px 18px; cursor: pointer;
+  font-size: 15px; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(45,125,210,0.4);
+  z-index: 99; transition: transform .15s;
+}
+.chat-fab:hover { transform: scale(1.05); }
+.chat-fab-badge {
+  background: #e84545; color: #fff;
+  border-radius: 50%; width: 18px; height: 18px;
+  font-size: 10px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 4px;
+}
+
+@media (max-width: 480px) {
+  .chat-panel { width: calc(100vw - 20px); right: 10px; }
+}
+
 /* ── QUESTION SCREEN ── */
 #screen-question {
   position:relative; justify-content:flex-end; padding:0;
@@ -935,11 +1044,30 @@ html, body {
     </div>
     <div class="podium" id="podium"></div>
     <div class="res-btns">
+      <button class="btn btn-primary" id="btn-rematch" onclick="requestRematch()" style="display:none">🔄 Revancha</button>
+      <div id="rematch-status" style="font-size:13px;color:#8892b0;text-align:center;min-height:18px"></div>
       <button class="btn btn-primary" onclick="playAgain()">Jugar de nuevo</button>
       <button class="btn btn-ghost"   onclick="goHome()">Volver al inicio</button>
     </div>
   </div>
 </div>
+
+<!-- CHAT -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <span class="chat-title">💬 Chat</span>
+    <button class="chat-toggle" onclick="toggleChat()" id="chat-toggle-btn">▼</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-wrap">
+    <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="100"
+      onkeydown="if(event.key==='Enter') sendChat()">
+    <button onclick="sendChat()">→</button>
+  </div>
+</div>
+<button class="chat-fab" id="chat-fab" onclick="toggleChat()">
+  💬 <span class="chat-fab-badge" id="chat-badge" style="display:none">0</span>
+</button>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -1612,6 +1740,20 @@ function showResults(room) {
       <span class="podium-pts" style="color:${p.color}">${p.score}</span>
     </div>
   `).join('');
+
+  // Show rematch button for multiplayer
+  const rematchBtn = document.getElementById('btn-rematch');
+  if (rematchBtn && room.players && room.players.length > 1) {
+    rematchBtn.style.display = 'block';
+    rematchBtn.disabled = false;
+  }
+
+  // Show and activate chat
+  const panel = document.getElementById('chat-panel');
+  panel.style.display = 'flex';
+  panel.classList.remove('collapsed');
+  chatOpen = true;
+  addChatMessage('', '🏁 Partida terminada — ¡chatea con tus rivales!', true);
 }
 
 // ── MINI SCORES ───────────────────────────────────────────────────────────────
@@ -1636,6 +1778,70 @@ function showScreen(id) {
 function playAgain() { window.location.href = 'trivial-lobby.html'; }
 function goHome()    { window.location.href = 'trivial-modos.html'; }
 
+// ── CHAT ──────────────────────────────────────────────────────────────────────
+let chatOpen = true;
+let unreadCount = 0;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  panel.classList.toggle('collapsed', !chatOpen);
+  if (chatOpen) {
+    unreadCount = 0;
+    document.getElementById('chat-badge').style.display = 'none';
+  }
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg || !socket) return;
+  socket.emit('chat:send', { message: msg, playerName: MY_NAME });
+  input.value = '';
+}
+
+function addChatMessage(playerName, message, isSystem = false) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  const isMe = playerName === MY_NAME;
+
+  if (isSystem) {
+    div.className = 'chat-msg system';
+    div.innerHTML = `<span class="chat-msg-text">${message}</span>`;
+  } else {
+    div.className = `chat-msg ${isMe ? 'is-me' : ''}`;
+    div.innerHTML = `
+      <span class="chat-msg-name ${isMe ? 'me' : ''}">${isMe ? 'Tú' : playerName}</span>
+      <span class="chat-msg-text">${message}</span>
+    `;
+  }
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Unread badge if chat is collapsed
+  if (!chatOpen && !isSystem) {
+    unreadCount++;
+    const badge = document.getElementById('chat-badge');
+    badge.textContent = unreadCount;
+    badge.style.display = 'inline-flex';
+  }
+}
+
+// ── REMATCH ───────────────────────────────────────────────────────────────────
+let rematchVotes = new Set();
+
+function requestRematch() {
+  socket.emit('game:rematch');
+  document.getElementById('btn-rematch').disabled = true;
+  document.getElementById('rematch-status').textContent = 'Esperando al resto de jugadores...';
+}
+
+function updateRematchStatus(votes, total) {
+  document.getElementById('rematch-status').textContent =
+    `${votes}/${total} quieren revancha`;
+}
+
 // ── MUTE ──────────────────────────────────────────────────────────────────────
 let muted = false;
 function toggleMute() {
@@ -1654,9 +1860,12 @@ function toggleMute() {
   });
 }
 
-// ── CONNECT ───────────────────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   drawWheel(categories, 0);
+  // Init chat as collapsed
+  document.getElementById('chat-panel').classList.add('collapsed');
+  chatOpen = false;
   connectSocket();
 });
 
@@ -1690,6 +1899,24 @@ function connectSocket() {
 
   socket.on('connect_error', (err) => console.log('❌ Error conexión:', err.message));
   socket.on('disconnect', (reason) => console.log('🔌 Desconectado:', reason));
+
+  // ── CHAT ──
+  socket.on('chat:message', ({ playerName, message }) => {
+    addChatMessage(playerName, message);
+  });
+
+  socket.on('chat:system', ({ message }) => {
+    addChatMessage('', message, true);
+  });
+
+  // ── REMATCH ──
+  socket.on('game:rematchVote', ({ votes, total }) => {
+    updateRematchStatus(votes, total);
+  });
+
+  socket.on('game:rematchStart', ({ roomCode }) => {
+    window.location.href = `trivial-online-juego.html?room=${roomCode}&player=${encodeURIComponent(MY_NAME)}&host=${IS_HOST}`;
+  });
 }
 
 // ── ROOM UPDATE ───────────────────────────────────────────────────────────────
