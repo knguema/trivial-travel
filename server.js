@@ -709,6 +709,53 @@ io.on('connection', (socket) => {
     broadcastRoom(code);
   });
 
+  // ── CHAT ──────────────────────────────────────────────────────────────────
+  socket.on('chat:send', ({ message, playerName }) => {
+    const code = socket.data.roomCode;
+    if (!code || !message) return;
+    const clean = message.trim().slice(0, 100);
+    if (!clean) return;
+    io.to(code).emit('chat:message', { playerName, message: clean });
+  });
+
+  // ── REMATCH ───────────────────────────────────────────────────────────────
+  socket.on('game:rematch', () => {
+    const code = socket.data.roomCode;
+    const room = rooms[code];
+    if (!room || room.state !== 'finished') return;
+
+    if (!room.rematchVotes) room.rematchVotes = new Set();
+    room.rematchVotes.add(socket.id);
+
+    const votes = room.rematchVotes.size;
+    const total = room.players.length;
+
+    // Notify all of current vote count
+    io.to(code).emit('game:rematchVote', { votes, total });
+
+    // If all voted — start rematch
+    if (votes >= total) {
+      // Reset room state
+      room.state = 'spinning';
+      room.currentRound = 1;
+      room.turnInRound = 0;
+      room.currentPlayerIdx = 0;
+      room.usedQuestions = {};
+      room.lastCatPerPlayer = {};
+      room.usedCatsPerPlayer = {};
+      room.rematchVotes = new Set();
+      room.scores = {};
+      room.players.forEach(p => { p.score = 0; room.scores[p.id] = 0; });
+
+      // Notify all to navigate to new game
+      io.to(code).emit('game:rematchStart', { roomCode: code });
+      setTimeout(() => broadcastRoom(code), 2000);
+
+      // System chat message
+      io.to(code).emit('chat:system', { message: '🔄 ¡Revancha! Nueva partida comenzando...' });
+    }
+  });
+
   // ─── Admin API ────────────────────────────────────────────────────────────
   socket.on('admin:setCategories', ({ tenantId, categories, adminKey }) => {
     // In production validate adminKey
